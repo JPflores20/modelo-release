@@ -49,7 +49,7 @@ const Login = () => {
               Grupo Modelo
             </h1>
             <p className="text-blue-100/80 text-sm font-light tracking-wider uppercase">
-              Sistema de Liberación de Órdenes
+              Sistema | ZEUS
             </p>
           </div>
         </div>
