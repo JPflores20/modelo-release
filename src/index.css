@@ -1,0 +1,143 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Grupo Modelo Corporate Design System
+   Primary: Navy Blue (#002855)
+   Secondary: Gold/Yellow (#FFB81C)
+   Background: Clean White (#FFFFFF) and Light Gray (#F3F4F6)
+   Text: Dark Slate (#1e293b)
+*/
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 215 28% 17%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 28% 17%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 28% 17%;
+
+    --primary: 214 100% 17%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 43 100% 55%;
+    --secondary-foreground: 214 100% 17%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 43 100% 55%;
+    --accent-foreground: 214 100% 17%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 214 100% 17%;
+
+    --radius: 0.5rem;
+
+    /* Custom tokens for the application */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+
+    --sidebar-background: 214 100% 17%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 43 100% 55%;
+    --sidebar-primary-foreground: 214 100% 17%;
+    --sidebar-accent: 214 100% 25%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 214 100% 25%;
+    --sidebar-ring: 43 100% 55%;
+  }
+
+  .dark {
+    --background: 215 28% 10%;
+    --foreground: 0 0% 98%;
+
+    --card: 215 28% 12%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 215 28% 12%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 43 100% 55%;
+    --primary-foreground: 214 100% 17%;
+
+    --secondary: 214 100% 25%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 215 28% 17%;
+    --muted-foreground: 215 16% 65%;
+
+    --accent: 214 100% 25%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 215 28% 20%;
+    --input: 215 28% 20%;
+    --ring: 43 100% 55%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+
+    --sidebar-background: 215 28% 8%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 43 100% 55%;
+    --sidebar-primary-foreground: 214 100% 17%;
+    --sidebar-accent: 215 28% 15%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 215 28% 15%;
+    --sidebar-ring: 43 100% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground)) transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground));
+    border-radius: 3px;
+  }
+}
