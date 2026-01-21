@@ -12,11 +12,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Plus, Trash2, Search, Table as TableIcon } from "lucide-react";
+import { Plus, Trash2, Search, Table as TableIcon, Filter } from "lucide-react";
 import { Order } from "@/types/orders";
 import StatusBadge from "./StatusBadge";
 
@@ -27,6 +34,28 @@ interface OrdersGridProps {
   onSelectionChange: (selectedIds: Set<string>) => void;
 }
 
+// Lista de Productos (Tu lista personalizada)
+const PRODUCT_OPTIONS = [
+  "Corona",
+  "Bud Light",
+  "Corona Light Shine",
+  "Pacifico",
+  "Modelo Especial",
+  "Modelo Especial E",
+  "Barrilito",
+  "Victoria",
+  "Estrella E",
+  "Pacifico E",
+  "Negra Modelo",
+  "Michelob Ultra",
+  "Busch Light",
+  "Corona E",
+  "Corona Light E",
+  "BudWeiser",
+  "Pura Malta",
+  "Corona Light SH E"
+];
+
 const OrdersGrid = ({
   orders,
   selectedIds,
@@ -34,20 +63,29 @@ const OrdersGrid = ({
   onSelectionChange,
 }: OrdersGridProps) => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all"); // NUEVO: Estado para el filtro
 
   const filteredOrders = useMemo(() => {
-    if (!searchTerm.trim()) return orders;
-    const term = searchTerm.toLowerCase();
-    return orders.filter(
-      (order) =>
+    return orders.filter((order) => {
+      // 1. Filtro por Texto
+      const term = searchTerm.toLowerCase();
+      const matchesSearch = 
+        !term || 
         order.producto.toLowerCase().includes(term) ||
         order.descripcion.toLowerCase().includes(term) ||
         order.lote.toLowerCase().includes(term) ||
         order.casa.toLowerCase().includes(term) ||
         order.linea.toLowerCase().includes(term) ||
-        order.bateria.toLowerCase().includes(term)
-    );
-  }, [orders, searchTerm]);
+        order.bateria.toLowerCase().includes(term);
+
+      // 2. Filtro por Estado (NUEVO)
+      const matchesStatus = 
+        statusFilter === "all" || 
+        order.estatus === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [orders, searchTerm, statusFilter]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -100,42 +138,62 @@ const OrdersGrid = ({
   const isAllSelected =
     filteredOrders.length > 0 &&
     filteredOrders.every((o) => selectedIds.has(o.id));
-  const isPartialSelected =
-    filteredOrders.some((o) => selectedIds.has(o.id)) && !isAllSelected;
+  
+  const inputClassName = 
+    "h-8 text-sm bg-white border-blue-100 focus:border-[#FFB81C] focus:ring-[#FFB81C]/20 transition-all font-medium text-[#002855]";
 
   return (
-    <Card className="border-2 flex-1">
-      <CardHeader className="pb-3">
+    <Card className="border shadow-2xl flex-1 overflow-hidden bg-white/90 backdrop-blur-sm border-[#002855]/10">
+      <CardHeader className="pb-3 border-b border-gray-100 bg-gray-50/50">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <TableIcon className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg">Órdenes de Producción</CardTitle>
-            <span className="text-sm text-muted-foreground">
-              ({orders.length} registros)
-            </span>
+            <div className="p-2 bg-[#002855]/10 rounded-lg">
+              <TableIcon className="h-5 w-5 text-[#002855]" />
+            </div>
+            <div>
+              <CardTitle className="text-lg text-[#002855] font-bold">Órdenes de Producción</CardTitle>
+              <p className="text-xs text-muted-foreground">Gestión de lotes y consumos</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            
+            {/* NUEVO: Filtro por Estado */}
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px] h-9 border-blue-100 bg-white">
+                <Filter className="w-3 h-3 mr-2 text-muted-foreground" />
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="pendiente">Pendientes</SelectItem>
+                <SelectItem value="procesando">Procesando</SelectItem>
+                <SelectItem value="liberado">Liberados</SelectItem>
+                <SelectItem value="error">Errores</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Búsqueda */}
+            <div className="relative group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-[#FFB81C] transition-colors" />
               <Input
                 placeholder="Buscar..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 w-48"
+                className="pl-9 w-32 sm:w-48 border-blue-100 focus:border-[#FFB81C] focus:ring-[#FFB81C]/20"
               />
             </div>
-            {/* Actions */}
+
+            {/* Acciones */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={addNewOrder}
-                  className="gap-1"
+                  className="gap-1 border-blue-200 hover:border-[#002855] hover:text-[#002855] hover:bg-blue-50"
                 >
                   <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Agregar</span>
+                  <span className="hidden sm:inline font-semibold">Agregar</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Agregar nueva fila</TooltipContent>
@@ -146,7 +204,7 @@ const OrdersGrid = ({
                   variant="outline"
                   size="sm"
                   onClick={clearAllOrders}
-                  className="gap-1 text-destructive hover:text-destructive"
+                  className="gap-1 text-destructive border-red-100 hover:bg-red-50"
                   disabled={orders.length === 0}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -162,33 +220,38 @@ const OrdersGrid = ({
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="w-12">
+              <TableRow className="bg-[#002855] hover:bg-[#002855] border-b-4 border-[#FFB81C]">
+                <TableHead className="w-12 text-center">
                   <Checkbox
                     checked={isAllSelected}
                     onCheckedChange={handleSelectAll}
-                    className={isPartialSelected ? "data-[state=checked]:bg-primary/50" : ""}
+                    className="border-white/50 data-[state=checked]:bg-[#FFB81C] data-[state=checked]:text-[#002855] data-[state=checked]:border-[#FFB81C]"
                   />
                 </TableHead>
-                <TableHead className="min-w-[100px]">Producto</TableHead>
-                <TableHead className="min-w-[150px]">Descripción</TableHead>
-                <TableHead className="min-w-[100px]">Lote</TableHead>
-                <TableHead className="min-w-[80px]">Prehop</TableHead>
-                <TableHead className="min-w-[100px]">Desc Order</TableHead>
-                <TableHead className="min-w-[80px]">Casa</TableHead>
-                <TableHead className="min-w-[80px]">Línea</TableHead>
-                <TableHead className="min-w-[80px]">Batería</TableHead>
-                <TableHead className="min-w-[100px]">Estatus</TableHead>
+                <TableHead className="min-w-[100px] text-white font-bold">Producto</TableHead>
+                <TableHead className="min-w-[180px] text-white font-bold">Descripción</TableHead>
+                <TableHead className="min-w-[100px] text-white font-bold">Lote</TableHead>
+                <TableHead className="min-w-[80px] text-white font-bold">Prehop</TableHead>
+                <TableHead className="min-w-[100px] text-white font-bold">Desc Order</TableHead>
+                <TableHead className="min-w-[80px] text-white font-bold">Casa</TableHead>
+                <TableHead className="min-w-[80px] text-white font-bold">Línea</TableHead>
+                <TableHead className="min-w-[80px] text-white font-bold">Batería</TableHead>
+                <TableHead className="min-w-[100px] text-white font-bold">Estatus</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredOrders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-8">
-                    <div className="text-muted-foreground">
-                      {orders.length === 0
-                        ? 'No hay órdenes. Haga clic en "Agregar" para comenzar.'
-                        : "No se encontraron resultados para la búsqueda."}
+                  <TableCell colSpan={10} className="text-center py-12">
+                    <div className="flex flex-col items-center justify-center text-muted-foreground gap-2">
+                      <div className="h-12 w-12 rounded-full bg-blue-50 flex items-center justify-center">
+                        <Search className="h-6 w-6 text-blue-200" />
+                      </div>
+                      <p>
+                        {orders.length === 0
+                          ? 'No hay órdenes.'
+                          : "No se encontraron resultados para los filtros actuales."}
+                      </p>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -196,18 +259,20 @@ const OrdersGrid = ({
                 filteredOrders.map((order) => (
                   <TableRow
                     key={order.id}
-                    className={
-                      selectedIds.has(order.id)
-                        ? "bg-primary/5"
-                        : "hover:bg-muted/30"
-                    }
+                    className={`
+                      transition-colors duration-200 border-b border-blue-100/50
+                      ${selectedIds.has(order.id) 
+                        ? "bg-[#FFB81C]/10 hover:bg-[#FFB81C]/20" 
+                        : "hover:bg-blue-50/50"}
+                    `}
                   >
-                    <TableCell>
+                    <TableCell className="text-center">
                       <Checkbox
                         checked={selectedIds.has(order.id)}
                         onCheckedChange={(checked) =>
                           handleSelectOne(order.id, checked as boolean)
                         }
+                        className="data-[state=checked]:bg-[#002855] data-[state=checked]:border-[#002855]"
                       />
                     </TableCell>
                     <TableCell>
@@ -216,19 +281,28 @@ const OrdersGrid = ({
                         onChange={(e) =>
                           updateOrder(order.id, "producto", e.target.value)
                         }
-                        className="h-8 text-sm"
+                        className={inputClassName}
                         placeholder="ID"
                       />
                     </TableCell>
                     <TableCell>
-                      <Input
+                      <Select
                         value={order.descripcion}
-                        onChange={(e) =>
-                          updateOrder(order.id, "descripcion", e.target.value)
+                        onValueChange={(value) =>
+                          updateOrder(order.id, "descripcion", value)
                         }
-                        className="h-8 text-sm"
-                        placeholder="Descripción"
-                      />
+                      >
+                        <SelectTrigger className={`${inputClassName} w-full text-left`}>
+                          <SelectValue placeholder="Seleccionar..." />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[200px]">
+                          {PRODUCT_OPTIONS.map((option) => (
+                            <SelectItem key={option} value={option}>
+                              {option}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell>
                       <Input
@@ -236,7 +310,7 @@ const OrdersGrid = ({
                         onChange={(e) =>
                           updateOrder(order.id, "lote", e.target.value)
                         }
-                        className="h-8 text-sm"
+                        className={inputClassName}
                         placeholder="Lote"
                       />
                     </TableCell>
@@ -246,7 +320,7 @@ const OrdersGrid = ({
                         onChange={(e) =>
                           updateOrder(order.id, "prehop", e.target.value)
                         }
-                        className="h-8 text-sm"
+                        className={inputClassName}
                         placeholder="Prehop"
                       />
                     </TableCell>
@@ -256,7 +330,7 @@ const OrdersGrid = ({
                         onChange={(e) =>
                           updateOrder(order.id, "descOrder", e.target.value)
                         }
-                        className="h-8 text-sm"
+                        className={inputClassName}
                         placeholder="Desc"
                       />
                     </TableCell>
@@ -266,7 +340,7 @@ const OrdersGrid = ({
                         onChange={(e) =>
                           updateOrder(order.id, "casa", e.target.value)
                         }
-                        className="h-8 text-sm"
+                        className={inputClassName}
                         placeholder="Casa"
                       />
                     </TableCell>
@@ -276,7 +350,7 @@ const OrdersGrid = ({
                         onChange={(e) =>
                           updateOrder(order.id, "linea", e.target.value)
                         }
-                        className="h-8 text-sm"
+                        className={inputClassName}
                         placeholder="Línea"
                       />
                     </TableCell>
@@ -286,7 +360,7 @@ const OrdersGrid = ({
                         onChange={(e) =>
                           updateOrder(order.id, "bateria", e.target.value)
                         }
-                        className="h-8 text-sm"
+                        className={inputClassName}
                         placeholder="Batería"
                       />
                     </TableCell>

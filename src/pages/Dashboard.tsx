@@ -3,11 +3,22 @@ import Header from "@/components/Header";
 import ConfigurationCard from "@/components/ConfigurationCard";
 import OrdersGrid from "@/components/OrdersGrid";
 import ActivityLog from "@/components/ActivityLog";
+import DashboardMetrics from "@/components/DashboardMetrics"; // Importamos las métricas
 import { Button } from "@/components/ui/button";
-import { Loader2, Send } from "lucide-react";
+import { Loader2, Send, AlertTriangle } from "lucide-react";
 import { Order, ReleaseMode, LogEntry } from "@/types/orders";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-// Sample data for demonstration
+// Datos de ejemplo
 const SAMPLE_ORDERS: Order[] = [
   {
     id: "ORD-001",
@@ -76,6 +87,7 @@ const Dashboard = () => {
   const [orders, setOrders] = useState<Order[]>(SAMPLE_ORDERS);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isReleasing, setIsReleasing] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false); // Estado para el modal
   const [logs, setLogs] = useState<LogEntry[]>([
     {
       id: "init-1",
@@ -108,16 +120,29 @@ const Dashboard = () => {
   const delay = (ms: number) =>
     new Promise((resolve) => setTimeout(resolve, ms));
 
-  const handleRelease = async () => {
+  // Paso 1: Intentar liberar (abre el modal)
+  const handleReleaseClick = () => {
     const ordersToRelease =
       selectedIds.size > 0
         ? orders.filter((o) => selectedIds.has(o.id) && o.estatus === "pendiente")
         : orders.filter((o) => o.estatus === "pendiente");
 
     if (ordersToRelease.length === 0) {
-      addLog("No hay órdenes pendientes para liberar.", "warning");
+      addLog("No hay órdenes pendientes seleccionadas para liberar.", "warning");
       return;
     }
+
+    setShowConfirmDialog(true);
+  };
+
+  // Paso 2: Ejecutar liberación real después de confirmar
+  const executeRelease = async () => {
+    setShowConfirmDialog(false);
+    
+    const ordersToRelease =
+      selectedIds.size > 0
+        ? orders.filter((o) => selectedIds.has(o.id) && o.estatus === "pendiente")
+        : orders.filter((o) => o.estatus === "pendiente");
 
     setIsReleasing(true);
     addLog(`Iniciando proceso de liberación...`, "info");
@@ -135,7 +160,6 @@ const Dashboard = () => {
     addLog("Conexión RFC establecida.", "success");
 
     for (const order of ordersToRelease) {
-      // Update status to processing
       setOrders((prev) =>
         prev.map((o) =>
           o.id === order.id ? { ...o, estatus: "procesando" } : o
@@ -144,7 +168,6 @@ const Dashboard = () => {
       addLog(`Procesando orden ${order.producto} - Lote: ${order.lote}...`, "info");
       await delay(600 + Math.random() * 400);
 
-      // Simulate random success/failure (90% success rate)
       const isSuccess = Math.random() > 0.1;
 
       if (isSuccess) {
@@ -186,17 +209,21 @@ const Dashboard = () => {
     selectedIds.size > 0 ? selectedPendingCount : pendingCount;
 
   return (
-    <div className="min-h-screen bg-muted flex flex-col">
+    <div className="min-h-screen bg-muted/30 flex flex-col">
       <Header isConnected={isConnected} />
 
-      <main className="flex-1 container mx-auto px-4 py-6 flex flex-col gap-6">
-        {/* Configuration */}
+      <main className="flex-1 container mx-auto px-4 py-6 flex flex-col gap-6 animate-in slide-in-from-bottom-6 fade-in duration-700">
+        
+        {/* NUEVO: Panel de Métricas */}
+        <DashboardMetrics orders={orders} />
+
+        {/* Configuración */}
         <ConfigurationCard
           releaseMode={releaseMode}
           onReleaseModeChange={setReleaseMode}
         />
 
-        {/* Data Grid */}
+        {/* Tabla de Datos */}
         <OrdersGrid
           orders={orders}
           selectedIds={selectedIds}
@@ -204,16 +231,16 @@ const Dashboard = () => {
           onSelectionChange={setSelectedIds}
         />
 
-        {/* Activity Log */}
+        {/* Log de Actividad */}
         <ActivityLog logs={logs} />
 
-        {/* Action Footer */}
-        <div className="flex items-center justify-between py-4 border-t bg-card rounded-lg px-4 shadow-sm">
-          <div className="text-sm text-muted-foreground">
+        {/* Footer de Acciones Flotante */}
+        <div className="flex items-center justify-between py-4 px-6 border border-[#FFB81C]/20 bg-white rounded-xl shadow-lg shadow-[#002855]/5 sticky bottom-4 z-10 backdrop-blur-md bg-white/90">
+          <div className="text-sm text-[#002855]">
             {selectedIds.size > 0 ? (
               <span>
                 <strong>{selectedIds.size}</strong> órdenes seleccionadas (
-                <strong>{selectedPendingCount}</strong> pendientes)
+                <strong className="text-[#FFB81C]">{selectedPendingCount}</strong> pendientes)
               </span>
             ) : (
               <span>
@@ -224,14 +251,14 @@ const Dashboard = () => {
           </div>
           <Button
             size="lg"
-            onClick={handleRelease}
+            onClick={handleReleaseClick} // Ahora llama a la función que abre el modal
             disabled={isReleasing || releaseCount === 0}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 gap-2"
+            className="bg-[#FFB81C] hover:bg-[#e5a50a] text-[#002855] font-bold px-8 gap-2 shadow-md transition-all hover:scale-105"
           >
             {isReleasing ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Procesando...
+                Procesando en SAP...
               </>
             ) : (
               <>
@@ -244,9 +271,37 @@ const Dashboard = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-primary text-primary-foreground py-2 text-center text-xs">
+      <footer className="bg-[#002855] text-white/60 py-3 text-center text-xs border-t border-[#FFB81C]/30">
         © 2024 Grupo Modelo México. Sistema de Liberación de Órdenes v1.0
       </footer>
+
+      {/* Modal de Confirmación de Seguridad */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent className="border-l-4 border-l-[#FFB81C]">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-2 text-[#FFB81C] mb-2">
+              <AlertTriangle className="h-5 w-5" />
+              <span className="font-bold uppercase tracking-wider text-xs">Confirmación de Seguridad</span>
+            </div>
+            <AlertDialogTitle className="text-[#002855]">
+              ¿Está seguro de liberar {releaseCount} órdenes?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción enviará las órdenes seleccionadas a SAP para su procesamiento inmediato. 
+              Verifique que los lotes sean correctos antes de continuar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="border-transparent hover:bg-gray-100">Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={executeRelease}
+              className="bg-[#002855] hover:bg-[#002855]/90 text-white font-bold"
+            >
+              Confirmar Liberación
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
