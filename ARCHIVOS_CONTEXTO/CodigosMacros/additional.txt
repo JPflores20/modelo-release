@@ -1,0 +1,19 @@
+
+Sub ModifyDesc()
+
+Call SAPConnectionMS
+
+For u = 80 To 107
+
+session.findById("wnd[0]/usr/ctxtCAUFVD-AUFNR").Text = Cells(u, 28).Value
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]/usr/btnPUSH_LANGTEXT").press
+PText = session.findById("wnd[0]/usr/tblSAPLSTXXEDITAREA/txtRSTXT-TXLINE[2,1]").Text
+PText = PText + " - NACIONAL"
+session.findById("wnd[0]/usr/tblSAPLSTXXEDITAREA/txtRSTXT-TXLINE[2,1]").Text = PText
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+session.findById("wnd[0]/tbar[0]/btn[11]").press
+Next u
+
+End Sub
+

@@ -1,0 +1,98 @@
+Public Sub navGen()
+Dim ActiveShape As Shape
+Dim UserSelection As Variant
+
+On Error GoTo Errh
+Set UserSelection = ActiveWindow.Selection
+Set ActiveShape = ActiveSheet.Shapes(Application.Caller)
+t = ActiveShape.AlternativeText
+Worksheets(t).Activate
+
+Exit Sub
+
+Errh:
+    MsgBox ("No hay hoja")
+
+End Sub
+
+Public Function GetSelectedSlicerItems(SlicerName As String) As String
+Dim SL As SlicerCacheLevel
+Dim sI As SlicerItem
+
+Set SL = ActiveWorkbook.SlicerCaches(SlicerName).SlicerCacheLevels(1)
+For Each sI In SL.SlicerItems
+    If sI.Selected = True Then
+         GetSelectedSlicerItems = (sI.Value)
+    End If
+Next
+End Function
+
+
+Sub RegisterChange()
+Dim chang() As Variant
+Application.ScreenUpdating = False
+bom = recetas.ListObjects("RecetaOf").DataBodyRange
+curec = Hoja1.ListObjects("CurTab").DataBodyRange
+nbrand = Hoja1.Range("MarcaRecF").Value
+marca = settings.ListObjects("Marcas").DataBodyRange
+
+ReDim chang(8, 0)
+
+
+For u = 1 To UBound(marca, 1)
+If marca(u, 2) = nbrand Then
+nsku = marca(u, 1)
+End If
+Next u
+
+For y = 1 To UBound(curec, 1)
+ffn = False
+ffi = y
+For i = 1 To UBound(bom, 1)
+If bom(i, 9) = nbrand And bom(i, 4) = curec(y, 1) Then
+ffn = True
+If bom(i, 6) <> curec(y, 3) Then
+recetas.Cells(i + 1, 42).Value = curec(y, 3)
+ReDim Preserve chang(8, UBound(chang, 2) + 1)
+chang(0, UBound(chang, 2)) = Date
+chang(1, UBound(chang, 2)) = nbrand
+chang(2, UBound(chang, 2)) = curec(y, 1)
+chang(3, UBound(chang, 2)) = curec(y, 3)
+chang(4, UBound(chang, 2)) = curec(y, 4)
+chang(5, UBound(chang, 2)) = Environ("USERNAME")
+chang(6, UBound(chang, 2)) = Now
+
+End If
+End If
+Next i
+If ffn = False Then
+recetas.Cells(UBound(bom, 1) + 2, 37).Value = nsku
+recetas.Cells(UBound(bom, 1) + 2, r + 40).Value = curec(y, 1)
+recetas.Cells(UBound(bom, 1) + 2, r + 42).Value = curec(y, 3)
+
+ReDim Preserve chang(8, UBound(chang, 2) + 1)
+chang(0, UBound(chang, 2)) = Date
+chang(1, UBound(chang, 2)) = nbrand
+chang(2, UBound(chang, 2)) = curec(y, 1)
+chang(3, UBound(chang, 2)) = curec(y, 3)
+chang(5, UBound(chang, 2)) = Environ("USERNAME")
+chang(6, UBound(chang, 2)) = Now
+End If
+Next y
+
+If UBound(chang, 2) > 0 Then
+camb = controlCambios.ListObjects("Cambios").Range
+For y = 1 To UBound(chang, 2)
+controlCambios.Cells(UBound(camb, 1) + y + 5, 4).Value = chang(0, y)
+controlCambios.Cells(UBound(camb, 1) + y + 5, 5).Value = chang(1, y)
+controlCambios.Cells(UBound(camb, 1) + y + 5, 7).Value = chang(2, y)
+controlCambios.Cells(UBound(camb, 1) + y + 5, 9).Value = chang(3, y)
+controlCambios.Cells(UBound(camb, 1) + y + 5, 11).Value = chang(5, y)
+controlCambios.Cells(UBound(camb, 1) + y + 5, 12).Value = chang(6, y)
+Next y
+End If
+
+Application.ScreenUpdating = True
+
+End Sub
+

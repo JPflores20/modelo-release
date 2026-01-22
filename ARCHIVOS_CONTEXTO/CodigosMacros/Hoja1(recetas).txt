@@ -1,0 +1,64 @@
+Private Sub Worksheet_Change(ByVal Target As Range)
+
+If Not Intersect(Target, Range("MarcaRecF")) Is Nothing Then
+
+If ActiveSheet.Name = Hoja1.Name Then
+err.Clear
+Application.EnableEvents = False
+
+recetab = recetas.ListObjects("RecetaOf").DataBodyRange
+chang = controlCambios.ListObjects("Cambios").DataBodyRange
+
+Hoja1.ListObjects("CurTab").DataBodyRange.ClearContents
+Hoja1.ListObjects("CurTab").Resize Range(Cells(7, 7), Cells(8, 11))
+
+On Error Resume Next
+ActiveSheet.Shapes("DispM").Delete
+nbrand = Range("MarcaRecF").Value
+
+settings.Shapes(nbrand).Copy
+ActiveSheet.Range("B5").PasteSpecial
+On Error GoTo 0
+
+If err.Number = 0 Then
+indnum = ActiveSheet.Shapes.Count
+ActiveSheet.Shapes(indnum).Select
+Selection.Name = "DispM"
+End If
+
+ReDim curec(4, 0)
+ex = False
+For i = 1 To UBound(recetab, 1)
+If recetab(i, 9) = nbrand And recetab(i, 6) > 0 Then
+If ex = True Then
+ReDim Preserve curec(4, UBound(curec, 2) + 1)
+End If
+ex = True
+
+curec(0, UBound(curec, 2)) = recetab(i, 4)
+curec(1, UBound(curec, 2)) = recetab(i, 5)
+curec(2, UBound(curec, 2)) = recetab(i, 6)
+curec(3, UBound(curec, 2)) = recetab(i, 7)
+
+For y = 1 To UBound(chang, 1)
+If chang(y, 2) = nbrand And chang(y, 4) = recetab(i, 4) Then
+curec(4, UBound(curec, 2)) = chang(y, 10)
+End If
+Next y
+End If
+Next i
+
+curec = Application.WorksheetFunction.Transpose(curec)
+Range(Cells(8, 7), Cells(UBound(curec, 1) + 7, 11)).Value = curec
+
+
+
+Range("G16").Select
+
+
+Application.EnableEvents = True
+End If
+
+End If
+End Sub
+

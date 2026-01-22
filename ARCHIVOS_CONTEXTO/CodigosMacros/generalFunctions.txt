@@ -1,0 +1,755 @@
+Public SAPApplication, connection, session As Object
+Public SAParray() As Variant
+Public ConNum, nSessions As Integer
+Public Function cellcounter(ByVal j As Integer, Optional y As Boolean = False) As Integer
+    If y = True Then
+    i = 1
+    bln = 0
+        Do While bln < 300
+        If IsEmpty(Cells(j, i).Value) Then
+            bln = bln + 1
+            i = i + 1
+            
+        Else
+            bln = 0
+            i = i + 1
+        End If
+    Loop
+    Else
+    i = 1
+    bln = 0
+    Do While bln < 300
+        If IsEmpty(Cells(i, j).Value) Then
+            bln = bln + 1
+            i = i + 1
+            
+        Else
+            bln = 0
+            i = i + 1
+        End If
+    Loop
+    End If
+    cellcounter = i - 301
+End Function
+Public Function reglog(ByVal tim As Date, ByVal nam As String, Optional ByVal exp As String)
+log.Activate
+t = cellcounter(1)
+Cells(t + 1, 1).Value = nam
+Cells(t + 1, 2).Value = tim
+Cells(t + 1, 3).Value = Environ("USERNAME")
+Cells(t + 1, 4).Value = (Now - tim)
+If exp <> "" Then
+Cells(t + 1, 5).Value = exp
+End If
+End Function
+Public Function Maxrow(ByVal address As String)
+N = -1
+On Error Resume Next
+Do While err.Number = 0
+N = N + 1
+session.findById(address + CStr(N) + "]").SetFocus
+Loop
+On Error GoTo 0
+Maxrow = N - 1
+End Function
+
+Public Function SAPReqField(ByVal namefield As String, ByVal maxrowdisp As Integer)
+session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC").verticalScrollbar.Position = 0
+scolcoun = 1
+
+If InStr(namefield, "-") <> 0 Then
+tmr = Split(namefield, "-")
+namefield = tmr(1)
+Do While idenflag = False
+For a = 0 To maxrowdisp
+seeme = session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC/txtGS_SELFIELDS-FIELDNAME[6," + CStr(a) + "]").Text
+If session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC/txtGS_SELFIELDS-FIELDNAME[6," + CStr(a) + "]").Text = namefield Then
+idenflag = True
+session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC/btnPUSH[4," + CStr(a) + "]").SetFocus
+session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC/btnPUSH[4," + CStr(a) + "]").press
+session.findById("wnd[1]/tbar[0]/btn[24]").press
+session.findById("wnd[1]/tbar[0]/btn[8]").press
+End If
+Next a
+If idenflag = False Then
+scrolcoun = scrolcoun + 1
+session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC").verticalScrollbar.Position = maxrowdisp * (scrolcoun)
+End If
+Loop
+
+ElseIf InStr(namefield, "|") <> 0 Then
+tmr = Split(namefield, "|")
+For c = 0 To UBound(tmr, 1)
+Do While idenflag = False
+For a = 0 To maxrowdisp
+seeme = session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC/txtGS_SELFIELDS-FIELDNAME[6," + CStr(a) + "]").Text
+If session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC/txtGS_SELFIELDS-FIELDNAME[6," + CStr(a) + "]").Text = tmr(c) Then
+idenflag = True
+session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC/btnPUSH[4," + CStr(a) + "]").SetFocus
+session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC/btnPUSH[4," + CStr(a) + "]").press
+session.findById("wnd[1]/tbar[0]/btn[24]").press
+session.findById("wnd[1]/tbar[0]/btn[8]").press
+End If
+Next a
+If idenflag = False Then
+scrolcoun = scrolcoun + 1
+session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC").verticalScrollbar.Position = maxrowdisp * (scrolcoun)
+End If
+Loop
+Next c
+'REM
+Else
+Do While idenflag = False
+For a = 0 To maxrowdisp
+seeme = session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC/txtGS_SELFIELDS-FIELDNAME[6," + CStr(a) + "]").Text
+If session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC/txtGS_SELFIELDS-FIELDNAME[6," + CStr(a) + "]").Text = namefield Then
+idenflag = True
+session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC/btnPUSH[4," + CStr(a) + "]").SetFocus
+session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC/btnPUSH[4," + CStr(a) + "]").press
+session.findById("wnd[1]/tbar[0]/btn[24]").press
+session.findById("wnd[1]/tbar[0]/btn[8]").press
+End If
+Next a
+If idenflag = False Then
+scrolcoun = scrolcoun + 1
+session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC").verticalScrollbar.Position = maxrowdisp * (scrolcoun)
+End If
+Loop
+End If
+
+End Function
+
+Public Function layout(ByVal fieldnam As Variant, ByVal maxrowdisp As Integer)
+Dim ore() As Variant
+ReDim ore(UBound(fieldnam, 1), 2)
+    
+
+idenflag = 0
+session.findById("wnd[0]/tbar[1]/btn[18]").press
+lim = 0
+'cambio de e 1 a e 2
+For E = 1 To UBound(fieldnam, 1)
+If fieldnam(E, 1) <> "" Then
+lim = lim + 1
+End If
+Next E
+
+session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC").verticalScrollbar.Position = 0
+colcoun = 1
+Do While idenflag < lim - 1
+For a = 0 To maxrowdisp
+seeme = session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC/txtGS_SELFIELDS-FIELDNAME[6," + CStr(a) + "]").Text
+For t = 2 To UBound(fieldnam, 1)
+If InStr(fieldnam(t, 1), "|") <> 0 Then
+tme = Split(fieldnam(t, 1), "|")
+For j = 0 To UBound(tme, 1)
+If session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC/txtGS_SELFIELDS-FIELDNAME[6," + CStr(a) + "]").Text = tme(j) Then
+session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC/chkGS_SELFIELDS-MARK[5," + CStr(a) + "]").Selected = True
+ore(idenflag, 1) = Int(CStr(scrolcoun) + CStr(a))
+ore(idenflag, 2) = fieldnam(t, 1)
+fieldnam(t, 1) = ""
+idenflag = idenflag + 1
+End If
+Next j
+ElseIf InStr(fieldnam(t, 1), "-") <> 0 Then
+tme = Split(fieldnam(t, 1), "-")
+If session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC/txtGS_SELFIELDS-FIELDNAME[6," + CStr(a) + "]").Text = tme(1) Then
+session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC/chkGS_SELFIELDS-MARK[5," + CStr(a) + "]").Selected = True
+ore(idenflag, 1) = Int(CStr(scrolcoun) + CStr(a))
+ore(idenflag, 2) = fieldnam(t, 1)
+fieldnam(t, 1) = ""
+idenflag = idenflag + 1
+End If
+Else
+If session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC/txtGS_SELFIELDS-FIELDNAME[6," + CStr(a) + "]").Text = fieldnam(t, 1) Then
+session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC/chkGS_SELFIELDS-MARK[5," + CStr(a) + "]").Selected = True
+ore(idenflag, 1) = Int(CStr(scrolcoun) + CStr(a))
+ore(idenflag, 2) = fieldnam(t, 1)
+fieldnam(t, 1) = ""
+idenflag = idenflag + 1
+End If
+End If
+Next t
+Next a
+If idenflag < lim - 1 Then
+scrolcoun = scrolcoun + 1
+session.findById("wnd[0]/usr/tblSAPLSE16NSELFIELDS_TC").verticalScrollbar.Position = maxrowdisp * (scrolcoun)
+End If
+Loop
+
+layout = ore
+End Function
+Public Function savtabde(ByVal nam As String, con As Boolean)
+
+session.findById("wnd[0]/tbar[1]/btn[8]").press
+session.findById("wnd[0]/usr/cntlRESULT_LIST/shellcont/shell").pressToolbarContextButton "&MB_EXPORT"
+session.findById("wnd[0]/usr/cntlRESULT_LIST/shellcont/shell").selectContextMenuItem "&XXL"
+session.findById("wnd[1]/usr/ctxtDY_PATH").Text = Environ("USERPROFILE") + "\Desktop\"
+session.findById("wnd[1]/usr/ctxtDY_FILENAME").Text = nam + ".XLSX"
+session.findById("wnd[1]/tbar[0]/btn[0]").press
+If con = False Then
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+Else
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+End If
+
+savtabde = Environ("USERPROFILE") + "\Desktop\" + nam + ".XLSX"
+End Function
+
+Public Function WorkbookOpen(WorkBookName As String) As Boolean
+WorkbookOpen = False
+On Error GoTo WorkBookNotOpen
+If Len(Application.Workbooks(WorkBookName).Name) > 0 Then
+WorkbookOpen = True
+Exit Function
+End If
+WorkBookNotOpen:
+End Function
+
+Public Function BringWD(ByVal link As String, clip As Boolean, arr As Boolean, col As Integer, dl As Boolean, Optional sheetnam As String) As Variant
+Dim Detailed() As Variant
+Dim exportfile As Workbook
+If sheetnam = "" Then
+sheetnam = "Hoja1"
+End If
+Application.DisplayAlerts = False
+Set exportfile = Workbooks.Open(link)
+Dim exportsheet As Worksheet
+exportfile.Activate
+'Sheet6.Visible = xlVisible
+
+exportfile.VBProject.vbcomponents(sheetnam).Activate
+'Sheet1.Activate
+'exportfile.Sheet6.Activate
+q = cellcounter(1)
+If col = 0 Then
+exportfile.VBProject.vbcomponents(sheetnam).Activate
+col = cellcounter(1, True)
+End If
+
+If clip = True Then
+Range(Cells(1, 1), Cells(i, col)).Copy
+End If
+If arr = True Then
+Detailed = Range(Cells(1, 1), Cells(q, col)).Value
+End If
+
+exportfile.Close savechanges:=False
+Application.DisplayAlerts = True
+
+If dl = True Then
+Kill (link)
+End If
+
+BringWD = Detailed
+End Function
+
+Public Function ArrDim(ByVal arr As Variant) As Integer
+i = 0
+ArrDim = -99
+On Error Resume Next
+err.Clear
+Do While IsNumeric(UBound(arr, i + 1))
+If err.Number = 9 Then
+Exit Do
+Else
+i = i + 1
+End If
+Loop
+ArrDim = i
+On Error GoTo 0
+
+End Function
+Public Sub SAPmultval(ByVal arr As Variant, ByVal sapID As Variant)
+
+Dim TempWB As Workbook
+Set TempWB = Workbooks.add(1)
+TempWB.Activate
+vl = ArrDim(arr)
+Cells.NumberFormat = "@"
+
+If vl = 1 Then
+For r = 0 To UBound(arr, 1)
+Cells(r + 1, 1).Value = arr(r)
+Next r
+Else
+For r = 1 To UBound(arr, 1)
+Cells(r + 1, 1).Value = arr(r, 1)
+Next r
+End If
+
+Range(Cells(1, 1), Cells(r, 1)).Copy
+
+session.findById(sapID).press
+session.findById("wnd[1]/tbar[0]/btn[24]").press
+session.findById("wnd[1]/tbar[0]/btn[8]").press
+Range(Cells(1, 1), Cells(1, 1)).Copy
+
+TempWB.Close savechanges:=False
+Set TempWB = Nothing
+
+End Sub
+
+Sub EraseDefLayout()
+session.findById("wnd[0]/tbar[1]/btn[8]").press
+session.findById("wnd[0]/usr/cntlRESULT_LIST/shellcont/shell").pressToolbarContextButton "&MB_VARIANT"
+session.findById("wnd[0]/usr/cntlRESULT_LIST/shellcont/shell").selectContextMenuItem "&MAINTAIN"
+
+Set Table = session.findById("wnd[0]/usr/cntlGRID1/shellcont/shell")
+cols = Table.ColumnCount - 1
+Row = Table.RowCount - 1
+Dim columns As Object
+Set columns = Table.ColumnOrder
+
+
+For k = 0 To Row
+If Table.Getcellvalue(k, "DEFAULT") <> "" Then
+Table.setCurrentCell k, "DEFAULT"
+Table.clickCurrentCell
+End If
+Next k
+
+session.findById("wnd[0]/tbar[0]/btn[11]").press
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+
+
+End Sub
+Public Sub SavTextTab(ByVal finame As String, ByVal paths As String)
+
+session.findById("wnd[0]/mbar/menu[0]/menu[1]/menu[2]").Select
+session.findById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[1,0]").Select
+session.findById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[1,0]").SetFocus
+session.findById("wnd[1]/tbar[0]/btn[0]").press
+session.findById("wnd[1]/usr/ctxtDY_PATH").Text = paths
+session.findById("wnd[1]/usr/ctxtDY_FILENAME").Text = finame + ".txt"
+session.findById("wnd[1]/usr/ctxtDY_FILENAME").caretPosition = 11
+session.findById("wnd[1]/tbar[0]/btn[0]").press
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+
+End Sub
+
+Public Function ImportTextFile(ByVal finpath As String, arr As Boolean, ByVal startco As Integer, ByVal startrow As Integer, Optional ByVal add As Range)
+If arr = True Then
+Dim TempWB As Workbook
+Set TempWB = Workbooks.add(1)
+    With TempWB.Sheets(1)
+        Application.CutCopyMode = False
+        On Error Resume Next
+        .DrawingObjects.Visible = True
+        .DrawingObjects.Delete
+        On Error GoTo 0
+    End With
+TempWB.Sheets(1).Activate
+End If
+If add Is Nothing Then
+Set add = Range(Cells(1, 1), Cells(1, 1))
+End If
+
+    With ActiveSheet.QueryTables.add(connection:= _
+        "TEXT;" + finpath, Destination:=add)
+        .FieldNames = True
+        .RowNumbers = False
+        .FillAdjacentFormulas = False
+        .PreserveFormatting = True
+        .RefreshOnFileOpen = False
+        .RefreshStyle = xlInsertDeleteCells
+        .SavePassword = False
+        .SaveData = True
+        .AdjustColumnWidth = True
+        .RefreshPeriod = 0
+        .TextFilePromptOnRefresh = False
+        .TextFilePlatform = 1252
+        .TextFileStartRow = 1
+        .TextFileParseType = xlDelimited
+        .TextFileTextQualifier = xlTextQualifierDoubleQuote
+        .TextFileConsecutiveDelimiter = False
+        .TextFileTabDelimiter = True
+        .TextFileSemicolonDelimiter = False
+        .TextFileCommaDelimiter = False
+        .TextFileSpaceDelimiter = False
+        .TextFileTrailingMinusNumbers = True
+        .Refresh BackgroundQuery:=False
+    ActiveWorkbook.Connections(1).Delete
+    ActiveSheet.QueryTables(1).Delete
+    End With
+If arr = True Then
+ro = cellcounter(startco, False)
+co = cellcounter(startrow, True)
+ImportTextFile = Range(Cells(startrow, startco), Cells(ro, co))
+TempWB.Close xlSaveChanges = False
+End If
+
+End Function
+Public Function IsInArray(ByVal stringToBeFound As String, arr As Variant) As Boolean
+    IsInArray = Not IsError(Application.Match(stringToBeFound, arr, 0))
+End Function
+
+Public Sub SAPConnectionMS()
+Dim saparrayt As ListObject
+time1 = Now
+Application.Calculate
+SAParray = settings.ListObjects("SAPTAB").Range
+Set saparrayt = settings.ListObjects("SAPTAB")
+
+
+
+For i = 2 To UBound(SAParray, 1)
+If IsNumeric(SAParray(i, 4)) = False And SAParray(i, 4) <> "NotActive" Then
+Connectionname = SAParray(i, 2)
+
+If scriptingeng = False Then
+Set SapGuiAuto = GetObject("SAPGUI")
+Set SAPApplication = SapGuiAuto.GetScriptingEngine
+End If
+
+Set connection = SAPApplication.Children(0)
+Set session = connection.Children(0)
+
+
+a = reglog(time1, Connectionname)
+End If
+Next i
+
+
+SAParray = settings.ListObjects("SAPTAB").Range
+
+End Sub
+
+Public Function BuildTable(ByVal reqab As Object, ByVal disp As Object, ByVal arr As Boolean, ByVal fil As Boolean, ByVal connam As String) As Variant
+
+Dim fintab(), rm(), temtab(), sizes(), com(), nloc(), plac() As Variant
+Call SAPConnectionMS
+ChangeSAPCon (connam)
+Application.Calculation = xlCalculationManual
+dispr = disp.Range
+inval = reqab.Range
+
+session.findById("wnd[0]/tbar[0]/okcd").Text = "se16n"
+session.findById("wnd[0]").sendVKey 0
+maxr = Maxrow()
+
+Dim TempWB As Workbook
+Set TempWB = Workbooks.add(1)
+TempWB.Activate
+With Cells
+.NumberFormat = "@"
+End With
+For r = 1 To UBound(inval, 2)
+For u = 1 To UBound(inval, 1)
+Cells(u + 1, r).Value = inval(u, r)
+Next u
+Next r
+
+For r = 1 To UBound(inval, 2)
+Cells(1, r).Value = inval(1, r)
+Next r
+
+For i = 1 To UBound(dispr, 2)
+If i Mod 2 <> 0 Then
+session.findById("wnd[0]/usr/ctxtGD-TAB").Text = dispr(1, i)
+session.findById("wnd[0]/usr/ctxtGD-TAB").SetFocus
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]/usr/txtGD-MAX_LINES").Text = ""
+session.findById("wnd[0]").sendVKey 0
+
+
+For t = 2 To UBound(dispr, 1)
+If dispr(t, i + 1) <> "" Then
+TempWB.Activate
+q = cellcounter(1, True)
+For u = 1 To q
+If Cells(1, u).Value = dispr(t, i + 1) Then
+a = cellcounter(u, False)
+Range(Cells(3, u), Cells(a, u)).Copy
+u = q
+End If
+Next u
+r = SAPReqField(dispr(t, i + 1), maxr)
+End If
+Next t
+templ = disp.ListColumns(i).Range
+'AQUI
+E = layout(templ, maxr)
+If session.findById("wnd[0]/usr/ctxtGD-VARIANT").Text <> "" Then
+Call EraseDefLayout
+session.findById("wnd[0]/usr/ctxtGD-VARIANT").Text = ""
+session.findById("wnd[0]").sendVKey 0
+End If
+F = savtabde(dispr(1, i), True)
+x = BringWD(F, False, True, 0, True)
+TempWB.Activate
+v = cellcounter(1, True)
+
+For r = 1 To UBound(x, 2)
+For u = 1 To UBound(x, 1)
+Cells(u + 1, r + v).Value = x(u, r)
+Next u
+Next r
+
+For u = 0 To UBound(E, 1)
+Cells(1, u + v + 1).Value = E(u, 2)
+Next u
+End If
+Next i
+
+TempWB.Activate
+ntab = UBound(dispr, 2) / 2
+ReDim Preserve fintab(ntab * UBound(dispr, 1), 0)
+u = cellcounter(1, True)
+ReDim Preserve rm(u)
+
+For q = 1 To UBound(rm, 1)
+o = cellcounter(q, False)
+rm(q) = o
+Next q
+mxv = Application.WorksheetFunction.Max(rm)
+temtab = Range(Cells(1, 1), Cells(mxv, UBound(rm, 1))).Value
+'Tamaños de tablas
+ReDim Preserve sizes(UBound(dispr, 2))
+For q = 1 To UBound(sizes, 1)
+o = 0
+For t = 2 To UBound(dispr, 1)
+If dispr(t, q) <> "" Then
+o = o + 1
+End If
+Next t
+sizes(q) = o
+Next q
+
+
+'First header
+'BORRAR
+
+For u = 1 To UBound(temtab, 1)
+ReDim Preserve fintab(UBound(fintab, 1), UBound(fintab, 2) + 1)
+For t = 1 To sizes(1)
+fintab(t, u - 1) = temtab(u, UBound(inval, 2) + t)
+Next t
+Next u
+
+
+'Tabla
+tem = UBound(inval, 2)
+ReDim Preserve nloc(2, ntab)
+For u = 1 To ntab
+nloc(1, u) = tem + 1
+nloc(2, u) = nloc(1, u) + sizes(u * 2 - 1) - 1
+tem = tem + sizes(u * 2 - 1)
+Next u
+
+
+For t = 2 To ntab
+
+ReDim com(2, 0)
+For h = nloc(1, t) To nloc(2, t)
+For d = 1 To UBound(fintab, 1)
+If temtab(1, h) = fintab(d, 0) Then
+ReDim Preserve com(2, UBound(com, 2) + 1)
+com(1, UBound(com, 2)) = d
+com(2, UBound(com, 2)) = h
+End If
+Next d
+Next h
+
+ReDim plac(2, 0)
+For h = nloc(1, t) To nloc(2, t)
+inc = True
+For w = 1 To UBound(com, 2)
+If com(2, w) = h Then
+inc = False
+End If
+Next w
+
+If inc = True Then
+For u = 1 To UBound(temtab, 2)
+If fintab(u, 0) = "" Then
+fintab(u, 0) = temtab(1, h)
+ReDim Preserve plac(2, UBound(plac, 2) + 1)
+plac(1, UBound(plac, 2)) = u
+plac(2, UBound(plac, 2)) = h
+u = UBound(temtab, 2)
+End If
+Next u
+End If
+Next h
+
+
+For u = 1 To UBound(fintab, 2)
+ReDim comb(UBound(fintab, 1), 0)
+For g = 1 To UBound(temtab, 1)
+minr = 0
+For s = 1 To UBound(com, 2)
+If temtab(g, com(2, s)) = fintab(com(1, s), u) Then
+minr = minr + 1
+End If
+Next s
+
+If minr = UBound(com, 2) Then
+coin = 0
+For k = 1 To UBound(comb, 2)
+For F = 1 To UBound(plac, 2)
+If comb(plac(1, F), k) = temtab(g, plac(2, F)) Then
+coin = coin + 1
+End If
+Next F
+Next k
+
+If coin < UBound(plac, 2) Then
+If fintab(plac(1, 1), u) <> "" Then
+ReDim Preserve fintab(UBound(fintab, 1), UBound(fintab, 2) + 1)
+For q = LBound(fintab, 1) To UBound(fintab, 1)
+fintab(q, UBound(fintab, 2)) = fintab(q, u)
+Next q
+For y = 1 To UBound(plac, 2)
+fintab(plac(1, y), UBound(fintab, 2)) = temtab(g, plac(2, y))
+Next y
+ReDim Preserve comb(UBound(fintab, 1), UBound(comb, 2) + 1)
+For o = LBound(fintab, 1) To UBound(fintab, 1)
+comb(o, UBound(comb, 2)) = fintab(o, UBound(fintab, 2))
+Next o
+
+Else
+For y = 1 To UBound(plac, 2)
+fintab(plac(1, y), u) = temtab(g, plac(2, y))
+Next y
+ReDim Preserve comb(UBound(fintab, 1), UBound(comb, 2) + 1)
+For o = LBound(fintab, 1) To UBound(fintab, 1)
+comb(o, UBound(comb, 2)) = fintab(o, u)
+Next o
+End If
+End If
+End If
+
+Next g
+Next u
+Next t
+
+
+For h = reqab.DataBodyRange.columns.Count + 1 To UBound(temtab, 2)
+For b = 1 To UBound(fintab, 1)
+If temtab(1, h) = fintab(b, 0) And fintab(b, 1) = "" And temtab(1, h) <> "" Then
+fintab(b, 1) = temtab(2, h)
+End If
+Next b
+Next h
+
+
+TempWB.Sheets.add
+With Cells
+.NumberFormat = "@"
+End With
+lagc = 0
+For u = 1 To UBound(fintab, 2)
+remval = 0
+For F = 1 To UBound(fintab, 1)
+If fintab(F, u) <> "" Then
+remval = 1
+F = UBound(fintab, 2)
+End If
+Next F
+If remval = 1 Then
+For y = 1 To UBound(fintab, 1)
+Cells(u - lagc, y).Value = fintab(y, u)
+Next y
+Else
+lagc = lagc + 1
+End If
+Next u
+
+If arr = True Then
+TempWB.Activate
+t = cellcounter(1)
+h = cellcounter(1, True)
+BuildTable = Range(Cells(1, 1), Cells(t, h))
+End If
+
+
+If fil = False Then
+TempWB.Close savechanges:=False
+End If
+
+
+
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+Application.Calculation = xlCalculationAutomatic
+End Function
+
+Public Sub EndSapSession()
+Set SAPpplication = Nothing
+Set connection = Nothing
+Set session = Nothing
+Dim saparrayt As ListObject
+Set saparrayt = Sheet1.ListObjects("SAPTAB")
+SAParray = Sheet1.ListObjects("SAPTAB").Range
+For r = 1 To UBound(SAParray, 1)
+saparrayt.DataBodyRange.Cells(r, 3).Value = ""
+Next r
+
+SAParray = Sheet1.ListObjects("SAPTAB").Range
+
+End Sub
+
+Public Function BringSAPSession(ByVal modal As String, ByVal up As Range, ByVal connam As String)
+tr = up.Value
+a = err.Number
+r = 9
+On Error GoTo ErrorHandleFun:
+b = session.ID
+b = connection.Description
+'Set connection = SAPApplication.Children(CLng(ConNum))
+'Set session = connection.Children(nSessions - 1)
+If modal = "session" Then
+If connam = connection.Description Then
+BringSAPSession = Mid(session.ID, 10, 1)
+Else
+BringSAPSession = "NotActive"
+Exit Function
+End If
+ElseIf modal = "connection" Then
+If connam = connection.Description Then
+BringSAPSession = Mid(session.ID, 17, 1)
+Else
+BringSAPSession = "NotActive"
+Exit Function
+End If
+End If
+a = err.Description
+b = err.Number
+ErrorHandleFun:
+Select Case err.Number
+
+Case Is = 424 'Object Required
+On Error GoTo -1
+BringSAPSession = "NoObject"
+Case Is = 614 'Object Required
+On Error GoTo -1
+BringSAPSession = "WrongEnumerator"
+Case Is = 462 'Object Required
+On Error GoTo -1
+BringSAPSession = "NoConnection"
+Case Is = 91 'Object Required
+On Error GoTo -1
+BringSAPSession = "NoConnection"
+Case Is = -2147417848 'Object Required
+On Error GoTo -1
+BringSAPSession = "NoConnection"
+End Select
+
+End Function
+
+Public Sub ChangeSAPCon(ByVal conname As String)
+
+Application.Calculate
+SAParray = Sheet1.ListObjects("SAPTAB").Range
+For u = 2 To UBound(SAParray, 1)
+If InStr(SAParray(u, 2), conname) <> 0 Then
+tempa = Split(SAParray(u, 3), "[")
+Set connection = SAPApplication.Children(CLng(Left(tempa(1), 1)))
+Set session = connection.Children(CLng(Left(tempa(2), 1)))
+End If
+Next u
+Application.Calculate
+End Sub

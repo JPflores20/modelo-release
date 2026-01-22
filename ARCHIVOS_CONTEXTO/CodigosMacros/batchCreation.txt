@@ -1,0 +1,326 @@
+Public rectab() As Variant
+Sub CreateOrder()
+
+Call SAPConnectionMS
+Call Cooispi
+Call Cor1
+Call Cooispi
+
+
+End Sub
+Sub ReleaseOrder()
+
+tm1 = Now
+
+modt = Range("TipoLib").Value
+
+If modt = "Lotes idénticos" Then
+Call InventoryQuery
+Call Cor2
+Call Cooispi
+ElseIf modt = "Lotes consecutivos" Then
+
+Call UpdateCooispi
+Call BringRels
+Call generateProfCons
+Call Cor2("CONS")
+Call Cooispi
+
+End If
+
+
+g = reglog(tm1, "Liberación")
+End Sub
+
+
+Public Sub Cooispi()
+
+Dim cotab As ListObject
+Set cotab = cosheet.ListObjects("cooispi")
+coois = cotab.DataBodyRange
+datetab = settings.ListObjects("DateTab").DataBodyRange
+
+cotab.DataBodyRange.SpecialCells(xlCellTypeConstants).ClearContents
+cotab.Resize Range(Cells(1, 1), Cells(2, UBound(coois, 2)))
+
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+session.findById("wnd[0]/tbar[0]/okcd").Text = "cooispi"
+session.findById("wnd[0]/tbar[0]/btn[0]").press
+session.findById("wnd[0]/usr/ssub%_SUBSCREEN_TOPBLOCK:PPIO_ENTRY:1100/ctxtPPIO_ENTRY_SC1100-ALV_VARIANT").Text = "/vale2"
+session.findById("wnd[0]").sendVKey 4
+session.findById("wnd[0]/usr/tabsTABSTRIP_SELBLOCK/tabpSEL_00/ssub%_SUBSCREEN_SELBLOCK:PPIO_ENTRY:1200/ctxtS_WERKS-LOW").Text = "PC13"
+session.findById("wnd[0]/usr/tabsTABSTRIP_SELBLOCK/tabpSEL_00/ssub%_SUBSCREEN_SELBLOCK:PPIO_ENTRY:1200/ctxtS_FEVOR-LOW").Text = "A01"
+session.findById("wnd[0]").sendVKey 4
+
+'Intervalo de hoy
+intod = Format(datetab(1, 1) - 1, "dd.mm.yyyy")
+fintod = Format(datetab(2, 1) + 1, "dd.mm.yyyy")
+session.findById("wnd[0]/usr/tabsTABSTRIP_SELBLOCK/tabpSEL_00/ssub%_SUBSCREEN_SELBLOCK:PPIO_ENTRY:1200/ctxtS_ECKST-LOW").Text = intod
+session.findById("wnd[0]/usr/tabsTABSTRIP_SELBLOCK/tabpSEL_00/ssub%_SUBSCREEN_SELBLOCK:PPIO_ENTRY:1200/ctxtS_ECKST-HIGH").Text = fintod
+session.findById("wnd[0]").sendVKey 4
+session.findById("wnd[0]/tbar[1]/btn[8]").press
+
+
+session.findById("wnd[0]/usr/cntlCUSTOM/shellcont/shell/shellcont/shell").pressToolbarButton "&NAVIGATION_PROFILE_TOOLBAR_EXPAND"
+session.findById("wnd[0]/usr/cntlCUSTOM/shellcont/shell/shellcont/shell").pressToolbarContextButton "&MB_EXPORT"
+session.findById("wnd[0]/usr/cntlCUSTOM/shellcont/shell/shellcont/shell").selectContextMenuItem "&PC"
+session.findById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[4,0]").Select
+session.findById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[4,0]").SetFocus
+session.findById("wnd[1]/tbar[0]/btn[0]").press
+
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+
+temp.Activate
+Cells(1, 1).Select
+ActiveSheet.Paste
+
+columns("A:A").Select
+Selection.TextToColumns Destination:=Range("A1"), DataType:=xlDelimited, _
+    TextQualifier:=xlDoubleQuote, ConsecutiveDelimiter:=False, Tab:=True, _
+    Semicolon:=False, Comma:=False, Space:=False, Other:=True, OtherChar _
+    :="|", FieldInfo:=Array(Array(1, 1), Array(2, 1), Array(3, 1), Array(4, 1), Array(5, _
+    1), Array(6, 1), Array(7, 1), Array(8, 1), Array(9, 1), Array(10, 1), Array(11, 1), Array(12 _
+    , 1), Array(13, 1), Array(14, 1), Array(15, 1), Array(16, 1), Array(17, 1), Array(18, 1), _
+    Array(19, 1), Array(20, 1), Array(21, 1), Array(22, 1)), TrailingMinusNumbers:=True
+
+u = cellcounter(2)
+i = cellcounter(4, True)
+coois = Range(Cells(6, 2), Cells(u, i)).Value
+
+Cells.ClearContents
+
+cosheet.Activate
+Range(Cells(2, 1), Cells(UBound(coois, 1) + 1, UBound(coois, 2))).Value = coois
+
+u = cellcounter(1)
+
+cotab.Resize Range(Cells(1, 1), Cells(u, cotab.Range.columns.Count))
+
+
+ordenes.Activate
+
+End Sub
+
+
+Sub Cor1()
+
+
+nord = ordenes.ListObjects("orders").DataBodyRange
+session.findById("wnd[0]/tbar[0]/okcd").Text = "/ncor1"
+session.findById("wnd[0]/tbar[0]/btn[0]").press
+
+
+For i = 1 To UBound(nord, 1)
+session.findById("wnd[0]/usr/ctxtCAUFVD-MATNR").Text = nord(i, 1)
+session.findById("wnd[0]/usr/ctxtCAUFVD-WERKS").Text = "pc13"
+session.findById("wnd[0]").sendVKey 0
+
+session.findById("wnd[0]/usr/tabsTABSTRIP_5115/tabpKOZE/ssubSUBSCR_5115:SAPLCOKO:5120/txtCAUFVD-GAMNG").Text = nord(i, 12)
+session.findById("wnd[0]/usr/tabsTABSTRIP_5115/tabpKOZE/ssubSUBSCR_5115:SAPLCOKO:5120/ctxtCAUFVD-GMEIN").Text = "hl"
+session.findById("wnd[0]").sendVKey 4
+intod = Format(Date, "dd.mm.yyyy")
+session.findById("wnd[0]/usr/tabsTABSTRIP_5115/tabpKOZE/ssubSUBSCR_5115:SAPLCOKO:5120/ctxtCAUFVD-GSTRP").Text = intod
+
+session.findById("wnd[0]").sendVKey 0
+On Error Resume Next
+session.findById("wnd[1]").sendVKey 0
+session.findById("wnd[1]").sendVKey 0
+On Error GoTo 0
+Application.Wait (Now + TimeValue("0:00:02"))
+
+session.findById("wnd[0]/usr/tabsTABSTRIP_5115/tabpKOWE").Select
+session.findById("wnd[0]/usr/tabsTABSTRIP_5115/tabpKOWE").Select
+
+Do While err.Number <> 0
+err.Clear
+session.findById("wnd[0]/usr/tabsTABSTRIP_5115/tabpKOWE").Select
+Loop
+
+session.findById("wnd[0]/usr/tabsTABSTRIP_5115/tabpKOWE/ssubSUBSCR_5115:SAPLCOKO:5190/ctxtAFPOD-CHARG").Text = nord(i, 3)
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[1]/usr/btnSPOP-VAROPTION1").press
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+session.findById("wnd[0]/usr/tabsTABSTRIP_5115/tabpSLAP").Select
+session.findById("wnd[0]/usr/tabsTABSTRIP_5115/tabpSLAP/ssubSUBSCR_5115:SAPLCOKO:5250/btnPUSH_STAK").press
+session.findById("wnd[1]/usr/ctxtRC62F-PROD_VERS").Text = nord(i, 7)
+session.findById("wnd[1]").sendVKey 0
+session.findById("wnd[0]").sendVKey 0
+On Error Resume Next
+session.findById("wnd[1]").sendVKey 0
+On Error GoTo 0
+Application.Wait (Now + TimeValue("0:00:02"))
+session.findById("wnd[0]/usr/btnPUSH_LANGTEXT").press
+session.findById("wnd[0]/usr/tblSAPLSTXXEDITAREA/txtRSTXT-TXLINE[2,1]").Text = nord(i, 5)
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+session.findById("wnd[0]/tbar[0]/btn[11]").press
+
+
+F = reglog(tim1, "cor1 Ord", nord(i, 3))
+ordenes.Activate
+
+
+Next i
+
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+
+End Sub
+
+Sub MatOperator(ByVal recipe As Variant)
+
+h = Maxrow("wnd[0]/usr/tblSAPLCOMKTCTRL_5120/ctxtRESBD-MATNR[1,")
+tmpval = "ini"
+k = 0
+
+Do While tmpval <> ""
+
+For u = 0 To h
+If session.findById("wnd[0]/usr/tblSAPLCOMKTCTRL_5120/ctxtRESBD-MATNR[1," + CStr(u) + "]").Text <> "" Then
+
+sapmat = session.findById("wnd[0]/usr/tblSAPLCOMKTCTRL_5120/ctxtRESBD-MATNR[1," + CStr(u) + "]").Text
+
+
+
+finmat = False
+mindex = 0
+For g = 1 To UBound(recipe, 2)
+If Int(sapmat) = recipe(4, g) Then
+recipe(0, g) = 1
+finmat = True
+session.findById("wnd[0]/usr/tblSAPLCOMKTCTRL_5120/ctxtRESBD-LGORT[8," + CStr(u) + "]").Text = recipe(13, g)
+If Trim(recipe(12, g)) <> "" Then
+session.findById("wnd[0]/usr/tblSAPLCOMKTCTRL_5120/ctxtRESBD-CHARG[9," + CStr(u) + "]").Text = recipe(12, g)
+End If
+session.findById("wnd[0]/usr/tblSAPLCOMKTCTRL_5120/txtRESBD-MENGE[4," + CStr(u) + "]").Text = 0 'recipe(6, g)
+session.findById("wnd[0]/usr/tblSAPLCOMKTCTRL_5120/ctxtRESBD-EINHEIT[5," + CStr(u) + "]").Text = recipe(7, g)
+End If
+Next g
+If finmat = False Then
+session.findById("wnd[0]/usr/tblSAPLCOMKTCTRL_5120").getAbsoluteRow(u).Selected = True
+session.findById("wnd[0]/usr/btnPUSH_DEL").press
+session.findById("wnd[1]/usr/btnSPOP-VAROPTION1").press
+u = u - 1
+End If
+End If
+Next u
+tmpval = session.findById("wnd[0]/usr/tblSAPLCOMKTCTRL_5120/ctxtRESBD-MATNR[1," + CStr(h) + "]").Text
+
+If tmpval <> "" Then
+k = k + 1
+session.findById("wnd[0]/usr/tblSAPLCOMKTCTRL_5120").verticalScrollbar.Position = h + 1
+End If
+Loop
+
+k = k + 1
+
+session.findById("wnd[0]/usr/tblSAPLCOMKTCTRL_5120").verticalScrollbar.Position = h + 1
+For j = 1 To UBound(recipe, 2)
+If recipe(0, j) <> 1 Then
+If session.findById("wnd[0]/usr/tblSAPLCOMKTCTRL_5120/ctxtRESBD-MATNR[1,1]").Text <> "" Then
+session.findById("wnd[0]/usr/tblSAPLCOMKTCTRL_5120").verticalScrollbar.Position = h + 1
+End If
+
+session.findById("wnd[0]/usr/tblSAPLCOMKTCTRL_5120/ctxtRESBD-MATNR[1,1]").Text = recipe(4, j)
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[1]/usr/txtRCM01-VORNR").Text = "020"
+session.findById("wnd[1]/tbar[0]/btn[0]").press
+session.findById("wnd[0]/usr/tblSAPLCOMKTCTRL_5120/ctxtRESBD-LGORT[8,1]").Text = recipe(13, j)
+session.findById("wnd[0]/usr/tblSAPLCOMKTCTRL_5120/ctxtRESBD-CHARG[9,1]").Text = recipe(12, j)
+session.findById("wnd[0]/usr/tblSAPLCOMKTCTRL_5120/txtRESBD-MENGE[4,1]").Text = 0
+session.findById("wnd[0]/usr/tblSAPLCOMKTCTRL_5120/ctxtRESBD-EINHEIT[5,1]").Text = recipe(7, j)
+End If
+Next j
+
+
+
+'Liberación
+session.findById("wnd[0]/tbar[1]/btn[30]").press
+session.findById("wnd[0]/tbar[0]/btn[11]").press
+
+
+End Sub
+Sub Cor2(Optional ByVal RecVal As String)
+
+
+nord = ordenes.ListObjects("orders").DataBodyRange
+rectab = recetas.ListObjects("RecetaOf").DataBodyRange
+reccons = consumpProf.ListObjects("consProf").DataBodyRange
+ReDim currec(UBound(rectab, 2) + 1, 0)
+
+Call SAPConnectionMS
+session.findById("wnd[0]/tbar[0]/okcd").Text = "cor2"
+session.findById("wnd[0]/tbar[0]/btn[0]").press
+
+For i = 1 To UBound(nord, 1)
+If nord(i, 9) = 1 And nord(i, 11) = "Abierta" Then
+If RecVal = "CONS" Then
+ReDim currec(UBound(rectab, 2) + 1, 0)
+For k = 1 To UBound(reccons, 1)
+If reccons(k, 1) = nord(i, 10) Then
+ReDim Preserve currec(UBound(currec, 1), UBound(currec, 2) + 1)
+currec(1, UBound(currec, 2)) = reccons(k, 3)
+currec(4, UBound(currec, 2)) = reccons(k, 5)
+currec(5, UBound(currec, 2)) = reccons(k, 6)
+currec(6, UBound(currec, 2)) = reccons(k, 7)
+currec(7, UBound(currec, 2)) = reccons(k, 8)
+currec(12, UBound(currec, 2)) = reccons(k, 10)
+currec(13, UBound(currec, 2)) = reccons(k, 9)
+End If
+Next k
+
+
+For g = 1 To UBound(rectab, 1)
+prevReg = False
+For b = 1 To UBound(currec, 2)
+If currec(4, b) = rectab(g, 4) Then
+prevReg = True
+End If
+Next b
+If prevReg = False Then
+If rectab(g, 1) = nord(i, 1) And rectab(g, 11) <> "x" Then
+ReDim Preserve currec(UBound(currec, 1), UBound(currec, 2) + 1)
+For t = 1 To UBound(rectab, 2)
+currec(t, UBound(currec, 2)) = rectab(g, t)
+Next t
+If nord(i, 8) = 2 Then
+For t = 17 To UBound(rectab, 2)
+currec(t - 5, UBound(currec, 2)) = rectab(g, t)
+Next t
+End If
+End If
+End If
+Next g
+
+
+
+
+Else
+ReDim currec(UBound(rectab, 2) + 1, 0)
+For g = 1 To UBound(rectab, 1)
+If rectab(g, 1) = nord(i, 1) And rectab(g, 11) <> "x" Then
+ReDim Preserve currec(UBound(currec, 1), UBound(currec, 2) + 1)
+For t = 1 To UBound(rectab, 2)
+currec(t, UBound(currec, 2)) = rectab(g, t)
+Next t
+If nord(i, 8) = 2 Then
+For t = 17 To UBound(rectab, 2)
+currec(t - 5, UBound(currec, 2)) = rectab(g, t)
+Next t
+End If
+End If
+Next g
+End If
+
+session.findById("wnd[0]/usr/ctxtCAUFVD-AUFNR").Text = nord(i, 10)
+session.findById("wnd[0]/tbar[1]/btn[7]").press
+session.findById("wnd[0]/usr/tblSAPLCOMKTCTRL_5120").columns.elementAt(1).Width = 8
+Call MatOperator(currec)
+
+
+End If
+Next i
+
+
+End Sub
+

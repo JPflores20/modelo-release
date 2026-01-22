@@ -76,7 +76,6 @@ export function CreateOrderDialog({ onCreate }: CreateOrderDialogProps) {
 
   const onSubmit = (values: z.infer<typeof orderSchema>) => {
     // CORRECCIÓN: Usamos 'as Order' para asegurar a TypeScript que el objeto cumple con la interfaz.
-    // La validación de Zod ya garantiza que los campos no están vacíos.
     const newOrder: Order = {
       id: `ORD-${Date.now()}`,
       ...values,
@@ -97,12 +96,11 @@ export function CreateOrderDialog({ onCreate }: CreateOrderDialogProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
-          variant="outline"
           size="sm"
-          className="gap-1 border-blue-200 hover:border-[#002855] hover:text-[#002855] hover:bg-blue-50 flex-1 sm:flex-none"
+          className="gap-2 bg-[#002855] text-white hover:bg-[#001f40] hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-blue-900/30 border-2 border-transparent hover:border-[#FFB81C] font-bold px-6 flex-1 sm:flex-none transform"
         >
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline font-semibold">Crear Orden</span>
+          <Plus className="h-5 w-5 text-[#FFB81C]" />
+          <span className="inline">Crear Nueva Orden</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px] border-t-4 border-t-[#FFB81C] max-h-[90vh] overflow-y-auto">
@@ -258,8 +256,8 @@ export function CreateOrderDialog({ onCreate }: CreateOrderDialogProps) {
 
             <DialogFooter className="pt-4 border-t mt-4">
               <Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-              <Button type="submit" className="bg-[#002855] hover:bg-[#001f40] text-white gap-2 shadow-md">
-                <Save className="h-4 w-4" />
+              <Button type="submit" className="bg-[#002855] hover:bg-[#001f40] text-white gap-2 shadow-md hover:scale-105 transition-transform">
+                <Save className="h-4 w-4 text-[#FFB81C]" />
                 Guardar Orden
               </Button>
             </DialogFooter>

@@ -1,0 +1,636 @@
+Public consor(), consProf(), exis() As Variant
+Sub GenerarConsumos()
+
+Call BringCons
+Call generateProfCons
+
+
+End Sub
+Sub UpdateCooispi()
+
+Call SAPConnectionMS
+Call Cooispi
+ordenes1.Activate
+
+
+End Sub
+Sub BringRels()
+coois = cosheet.ListObjects("cooispi").DataBodyRange
+ReDim consor(UBound(coois, 2), 0)
+
+For i = 1 To UBound(coois, 1)
+If InStr(coois(i, 12), "ABI") <> 0 Then
+err.Clear
+On Error Resume Next
+cmpval = Int(Right(coois(i, 6), 4))
+If err.Number = 0 Then
+ReDim Preserve consor(UBound(consor, 1), UBound(consor, 2) + 1)
+For u = 1 To UBound(coois, 2)
+consor(u, UBound(consor, 2)) = coois(i, u)
+Next u
+End If
+On Error GoTo 0
+End If
+Next i
+
+ordenes1.Activate
+
+consorsr = ordenes1.ListObjects("consor").Range.Row
+consorsc = ordenes1.ListObjects("consor").Range.Column
+consornc = ordenes1.ListObjects("consor").Range.columns.Count + consorsc - 1
+
+ordenes1.ListObjects("consor").Resize Range(Cells(consorsr, consorsc), Cells(consorsr + 1, consornc))
+
+k = cellcounter(2)
+Range(Cells(consorsr + 2, consorsc), Cells(k, consornc)).ClearContents
+
+For t = 1 To UBound(consor, 2)
+Cells(t + consorsr, consorsc).Value = consor(5, t)
+Next t
+
+
+End Sub
+Sub BringCons()
+coois = cosheet.ListObjects("cooispi").DataBodyRange
+ReDim consor(UBound(coois, 2), 0)
+
+For i = 1 To UBound(coois, 1)
+If InStr(coois(i, 12), "LIB") <> 0 And coois(i, 9) < 1 Then
+err.Clear
+On Error Resume Next
+cmpval = Int(Right(coois(i, 6), 4))
+If err.Number = 0 Then
+ReDim Preserve consor(UBound(consor, 1), UBound(consor, 2) + 1)
+For u = 1 To UBound(coois, 2)
+consor(u, UBound(consor, 2)) = coois(i, u)
+Next u
+End If
+On Error GoTo 0
+End If
+Next i
+
+ordenes1.Activate
+
+consorsr = ordenes1.ListObjects("consor").Range.Row
+consorsc = ordenes1.ListObjects("consor").Range.Column
+consornc = ordenes1.ListObjects("consor").Range.columns.Count + consorsc - 1
+
+ordenes1.ListObjects("consor").Resize Range(Cells(consorsr, consorsc), Cells(consorsr + 1, consornc))
+
+k = cellcounter(2)
+Range(Cells(consorsr + 2, consorsc), Cells(k, consornc)).ClearContents
+
+For t = 1 To UBound(consor, 2)
+Cells(t + consorsr, consorsc).Value = consor(5, t)
+Next t
+
+
+End Sub
+Function BatchSearch(ByVal mat As Long, ByVal quan As Double, Optional ByVal alm As Variant, Optional ByVal ordAlm As Integer)
+'exis = mb52tab.ListObjects("RawMb52").Range
+Dim batches() As Variant
+
+ReDim batches(4, 0)
+matsum = 0
+exisflag = False
+
+If ordAlm = -1 Then
+intord = 19
+Else
+intord = 17
+End If
+
+counter = 1
+If UBound(alm, 1) = 0 Then
+
+Do While quan > 0 And exisflag = False
+matsum = 0
+
+If delaycounter = True Then
+counter = remcount
+End If
+remcount = counter
+delaycounter = False
+
+For u = 1 To UBound(exis, 1)
+If exis(u, 2) = mat Then
+matsum = exis(u, 6) + matsum
+End If
+If exis(u, 2) = mat And exis(u, 14) = counter And exis(u, 12) = "" Then
+If batches(0, 0) <> "" Then
+ReDim Preserve batches(UBound(batches, 1), UBound(batches, 2) + 1)
+End If
+If exis(u, 6) > quan Then
+exis(u, 6) = exis(u, 6) - quan
+
+batches(0, UBound(batches, 2)) = mat
+batches(1, UBound(batches, 2)) = exis(u, 4)
+batches(2, UBound(batches, 2)) = exis(u, 9)
+batches(3, UBound(batches, 2)) = quan
+batches(4, UBound(batches, 2)) = 0
+u = UBound(exis, 1)
+quan = 0
+Else
+If exis(u, 7) > 0 Then
+
+batches(0, UBound(batches, 2)) = mat
+batches(1, UBound(batches, 2)) = exis(u, 4)
+batches(2, UBound(batches, 2)) = exis(u, 9)
+batches(3, UBound(batches, 2)) = 0
+batches(4, UBound(batches, 2)) = -1
+Else
+
+quan = quan - exis(u, 6)
+
+batches(0, UBound(batches, 2)) = mat
+batches(1, UBound(batches, 2)) = exis(u, 4)
+batches(2, UBound(batches, 2)) = exis(u, 9)
+batches(3, UBound(batches, 2)) = exis(u, 6)
+batches(4, UBound(batches, 2)) = 1
+exis(u, 6) = 0
+exis(u, 14) = 0
+delaycounter = True
+
+u = 1
+
+counter = counter + 1
+
+End If
+End If
+End If
+
+
+
+Next u
+
+If matsum = 0 Then
+exisflag = True
+End If
+
+counter = counter + 1
+
+Loop
+
+Else
+
+quanor = quan
+
+
+For p = 1 To UBound(alm, 1)
+exisflag = False
+counter = 1
+Do While quan > 0 And exisflag = False
+matsum = 0
+
+If delaycounter = True Then
+counter = remcount
+End If
+remcount = counter
+delaycounter = False
+
+For u = 1 To UBound(exis, 1)
+If exis(u, 2) = mat And alm(p) = exis(u, 4) Then
+matsum = matsum + exis(u, 6)
+End If
+
+If exis(u, 2) = mat And exis(u, intord) = counter And exis(u, 4) = alm(p) Then
+If exis(u, 6) > 0 And quan > 0 And exis(u, 12) = "" Then
+If batches(0, 0) <> "" Then
+ReDim Preserve batches(UBound(batches, 1), UBound(batches, 2) + 1)
+End If
+If exis(u, 6) > quan Then
+exis(u, 6) = exis(u, 6) - quan
+batches(0, UBound(batches, 2)) = mat
+batches(1, UBound(batches, 2)) = exis(u, 4)
+batches(2, UBound(batches, 2)) = exis(u, 13)
+batches(3, UBound(batches, 2)) = quan
+batches(4, UBound(batches, 2)) = 0
+quan = 0
+Else
+If exis(u, 7) > 0 Then
+
+batches(0, UBound(batches, 2)) = mat
+batches(1, UBound(batches, 2)) = exis(u, 4)
+batches(2, UBound(batches, 2)) = exis(u, 13)
+batches(3, UBound(batches, 2)) = 0
+batches(4, UBound(batches, 2)) = -1
+
+Else
+
+quan = quan - exis(u, 6)
+quan = Round(quan, 3)
+batches(0, UBound(batches, 2)) = mat
+batches(1, UBound(batches, 2)) = exis(u, 4)
+batches(2, UBound(batches, 2)) = exis(u, 13)
+batches(3, UBound(batches, 2)) = exis(u, 6)
+batches(4, UBound(batches, 2)) = 1
+exis(u, 6) = 0
+exis(u, 14) = 0
+counter = counter + 1
+delaycounter = True
+
+End If
+End If
+End If
+End If
+Next u
+
+If matsum < quanor Then
+If matsum = 0 Then
+exisflag = True
+End If
+If p = UBound(alm, 1) Then
+batches(3, UBound(batches, 2)) = 0
+batches(4, UBound(batches, 2)) = ""
+End If
+End If
+
+counter = counter + 1
+Loop
+
+Next p
+
+End If
+
+
+BatchSearch = batches
+End Function
+
+Sub generateProfCons()
+Dim prAlm() As Variant
+
+
+curruser = Environ("USERNAME")
+currtst = Now
+Call MostoExtraction
+
+exis = mb52tab.ListObjects("RawMb52").Range
+maltquan = settings.ListObjects("MatCant").DataBodyRange
+maltalm = settings.ListObjects("MatAlm").DataBodyRange
+sheetconsprof = consumpProf.ListObjects("consProf").DataBodyRange
+recipe = recetas.ListObjects("RecetaOf").Range
+AlmPref = ordenes1.ListObjects("AlmPref").DataBodyRange
+
+ReDim consProf(UBound(sheetconsprof, 2), 0)
+
+For u = 1 To UBound(consor, 2)
+
+'Filtra receta
+ReDim currec(UBound(recipe, 2) + 1, 0)
+consflag = True
+For g = 1 To UBound(recipe, 1)
+If recipe(g, 16) = 1 And recipe(g, 1) = consor(2, u) Then
+consflag = True
+End If
+If recipe(g, 1) = consor(2, u) And recipe(g, 11) <> "x" Then
+ReDim Preserve currec(UBound(currec, 1), UBound(currec, 2) + 1)
+For t = 1 To UBound(recipe, 2)
+currec(t, UBound(currec, 2)) = recipe(g, t)
+Next t
+End If
+Next g
+
+
+currlot = Int(Right(Trim(consor(6, u)), 4))
+If currlot = 8602 Then
+
+jki = 99
+End If
+
+If consflag = True Then
+'Iniciar con malta
+For h = 1 To UBound(currec, 2)
+ReDim consBatch(4, 0)
+
+maltmat = False
+prAlm = Array("NLL")
+prOrd = 1
+For m = 1 To UBound(AlmPref, 1)
+If AlmPref(m, 1) = currec(4, h) Then
+tmparr = Split(AlmPref(m, 2), ",")
+For y = 0 To UBound(tmparr, 1)
+ReDim Preserve prAlm(UBound(prAlm, 1) + 1)
+prAlm(UBound(prAlm, 1)) = tmparr(y)
+Next y
+
+prOrd = AlmPref(m, 4)
+End If
+Next m
+
+
+For k = 1 To UBound(maltquan, 1)
+If maltquan(k, 1) = currec(4, h) Then
+maltmat = True
+For a = 1 To UBound(maltas, 1)
+If maltas(a, 2) = currlot And IsNumeric(maltas(a, maltquan(k, 2))) And maltas(a, maltquan(k, 2)) <> "" Then
+If IsNumeric(maltas(a, maltalm(k, 2))) And maltas(a, maltalm(k, 2)) <> "" = True Then
+maltas(a, maltalm(k, 2)) = "SI" + Format(CStr(maltas(a, maltalm(k, 2))), "00")
+End If
+If maltas(a, maltquan(k, 2)) > 0 Then
+consQuan = maltas(a, maltquan(k, 2)) / 1000
+'Test
+prAlm = Array("NLL")
+'Test
+ReDim Preserve prAlm(UBound(prAlm, 1) + 1)
+prAlm(UBound(prAlm, 1)) = maltas(a, maltalm(k, 2))
+
+consBatch = BatchSearch(currec(4, h), consQuan, prAlm)
+End If
+For t = 0 To UBound(consBatch, 2)
+ReDim Preserve consProf(UBound(consProf, 1), UBound(consProf, 2) + 1)
+consProf(1, UBound(consProf, 2)) = consor(5, u)
+consProf(2, UBound(consProf, 2)) = consor(6, u)
+consProf(3, UBound(consProf, 2)) = consor(2, u)
+consProf(4, UBound(consProf, 2)) = consor(4, u)
+consProf(5, UBound(consProf, 2)) = currec(4, h)
+consProf(6, UBound(consProf, 2)) = currec(5, h)
+consProf(7, UBound(consProf, 2)) = consBatch(3, t)
+consProf(8, UBound(consProf, 2)) = currec(7, h)
+consProf(9, UBound(consProf, 2)) = consBatch(1, t)
+consProf(10, UBound(consProf, 2)) = consBatch(2, t)
+consProf(11, UBound(consProf, 2)) = curruser
+consProf(12, UBound(consProf, 2)) = currtst
+consProf(13, UBound(consProf, 2)) = consBatch(4, t)
+    
+Next t
+
+End If
+Next a
+End If
+Next k
+If maltmat = False And currec(6, h) > 0 Then
+
+If currec(4, h) = 1000000 Then
+jki = 99
+End If
+
+
+consBatch = BatchSearch(currec(4, h), currec(6, h), prAlm, prOrd)
+
+For t = 0 To UBound(consBatch, 2)
+ReDim Preserve consProf(UBound(consProf, 1), UBound(consProf, 2) + 1)
+consProf(1, UBound(consProf, 2)) = consor(5, u)
+consProf(2, UBound(consProf, 2)) = consor(6, u)
+consProf(3, UBound(consProf, 2)) = consor(2, u)
+consProf(4, UBound(consProf, 2)) = consor(4, u)
+consProf(5, UBound(consProf, 2)) = currec(4, h)
+consProf(6, UBound(consProf, 2)) = currec(5, h)
+consProf(7, UBound(consProf, 2)) = consBatch(3, t)
+consProf(8, UBound(consProf, 2)) = currec(7, h)
+consProf(9, UBound(consProf, 2)) = consBatch(1, t)
+consProf(10, UBound(consProf, 2)) = consBatch(2, t)
+consProf(11, UBound(consProf, 2)) = curruser
+consProf(12, UBound(consProf, 2)) = currtst
+consProf(13, UBound(consProf, 2)) = consBatch(4, t)
+Next t
+
+
+End If
+
+Next h
+
+
+Else
+consor(11, u) = "Cocto no Consumible por Inventario"
+End If
+
+Next u
+consumpProf.Activate
+
+conscols = consumpProf.ListObjects("consProf").Range.columns.Count
+
+consumpProf.ListObjects("consProf").Resize Range(Cells(1, 2), Cells(2, conscols + 1))
+
+h = cellcounter(2)
+Range(Cells(3, 1), Cells(h, conscols + 1)).ClearContents
+
+Application.Calculation = xlCalculationManual
+
+consProf = Application.WorksheetFunction.Transpose(consProf)
+Range(Cells(2, 1), Cells(UBound(consProf, 1) + 1, conscols + 1)).Value = consProf
+
+h = cellcounter(2)
+consumpProf.ListObjects("consProf").Resize Range(Cells(1, 2), Cells(h, conscols + 1))
+
+Application.Calculation = xlCalculationAutomatic
+End Sub
+
+Sub MatBatchOperator(ByVal recipe As Variant)
+Dim remem() As Variant
+
+h = Maxrow("wnd[0]/usr/subTABLE:SAPLCOWB:0500/tblSAPLCOWBTCTRL_0500/ctxtCOWB_COMP-MATNR[0,")
+
+session.findById("wnd[0]/usr/btnMALL").press
+session.findById("wnd[0]/usr/btnDELE").press
+hval = h
+k = 0
+currow = 0
+desf = 0
+IND = 0
+
+For j = 0 To UBound(recipe, 2)
+If recipe(3, j) > 0 Then
+If IND > hval Then
+IND = 1
+k = k + 1
+session.findById("wnd[0]/usr/subTABLE:SAPLCOWB:0500/tblSAPLCOWBTCTRL_0500").verticalScrollbar.Position = k * h + 1
+End If
+
+session.findById("wnd[0]/usr/subTABLE:SAPLCOWB:0500/tblSAPLCOWBTCTRL_0500/ctxtCOWB_COMP-MATNR[0," + CStr(IND) + "]").Text = recipe(1, j)
+session.findById("wnd[0]").sendVKey 0
+
+session.findById("wnd[0]/usr/subTABLE:SAPLCOWB:0500/tblSAPLCOWBTCTRL_0500/ctxtCOWB_COMP-LGORT[4," + CStr(IND) + "]").Text = recipe(5, j)
+If recipe(6, j) <> "          " Then
+session.findById("wnd[0]/usr/subTABLE:SAPLCOWB:0500/tblSAPLCOWBTCTRL_0500/ctxtCOWB_COMP-CHARG[5," + CStr(IND) + "]").Text = recipe(6, j)
+End If
+
+session.findById("wnd[0]/usr/subTABLE:SAPLCOWB:0500/tblSAPLCOWBTCTRL_0500/txtCOWB_COMP-ERFMG[1," + CStr(IND) + "]").Text = Round(recipe(3, j), 3)
+session.findById("wnd[0]/usr/subTABLE:SAPLCOWB:0500/tblSAPLCOWBTCTRL_0500/ctxtCOWB_COMP-ERFME[2," + CStr(IND) + "]").Text = recipe(4, j)
+
+IND = IND + 1
+End If
+
+
+Next j
+
+
+
+End Sub
+
+Sub ConsumeProfile()
+
+tim1 = Now
+
+Call SAPConnectionMS
+
+Dim PconsProf(), indProf() As Variant
+ReDim PconsProf(5, 0)
+ReDim indProf(6, 0)
+
+If IsEmpty(volumenCoc) = True Then
+Call MostoExtraction
+End If
+
+consor = ordenes1.ListObjects("consor").DataBodyRange
+consProf = consumpProf.ListObjects("consProf").DataBodyRange
+
+cord = ""
+For u = 1 To UBound(consProf, 1)
+If consProf(u, 1) <> "" Then
+cord = consProf(u, 1)
+If cord = PconsProf(1, UBound(PconsProf, 2)) Then
+ReDim Preserve indProf(UBound(indProf, 1), UBound(indProf, 2) + 1)
+For y = 5 To 10
+indProf(y - 4, UBound(indProf, 2)) = consProf(u, y)
+Next y
+PconsProf(5, UBound(PconsProf, 2)) = indProf
+Else
+ReDim Preserve PconsProf(UBound(PconsProf, 1), UBound(PconsProf, 2) + 1)
+ReDim indProf(6, 0)
+For y = 1 To 4
+PconsProf(y, UBound(PconsProf, 2)) = consProf(u, y)
+Next y
+For y = 5 To 10
+indProf(y - 4, UBound(indProf, 2)) = consProf(u, y)
+Next y
+PconsProf(5, UBound(PconsProf, 2)) = indProf
+End If
+End If
+Next u
+
+
+
+
+
+For h = 1 To UBound(consor, 1)
+If consor(h, 5) >= 0 And consor(h, 7) > 0 Then
+For j = 0 To UBound(PconsProf, 2)
+If PconsProf(1, j) = consor(h, 1) Then
+session.findById("wnd[0]/tbar[0]/okcd").Text = "cor6n"
+session.findById("wnd[0]/tbar[0]/btn[0]").press
+
+session.findById("wnd[0]/usr/ssubSUB01:SAPLCORU_S:0010/subSLOT_HDR:SAPLCORU_S:5115/ctxtAFRUD-AUFNR").Text = PconsProf(1, j)
+session.findById("wnd[0]/usr/ssubSUB01:SAPLCORU_S:0010/subSLOT_HDR:SAPLCORU_S:5115/ctxtAFRUD-VORNR").Text = "0020"
+currvol = 0
+session.findById("wnd[0]/usr/ssubSUB01:SAPLCORU_S:0010/subSLOT_CONF_TYPE:SAPLCORU_S:0105/cmbAFRUD-AUERU").SetFocus
+session.findById("wnd[0]/usr/ssubSUB01:SAPLCORU_S:0010/subSLOT_CONF_TYPE:SAPLCORU_S:0105/cmbAFRUD-AUERU").Key = "X"
+
+
+For y = 1 To UBound(volumenCoc, 1)
+If volumenCoc(y, 1) = consor(h, 8) Then
+currvol = volumenMosto(y, 1)
+End If
+Next y
+
+If consor(h, 10) = 0 Then
+
+session.findById("wnd[0]/usr/ssubSUB01:SAPLCORU_S:0010/subSLOT_DET1:SAPLCORU_S:0215/txtAFRUD-LMNGA").Text = currvol
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]/usr/ssubSUB01:SAPLCORU_S:0010/subSLOT_DET1:SAPLCORU_S:0215/txtAFRUD-LMNGA").SetFocus
+session.findById("wnd[0]").sendVKey 0
+End If
+If consor(h, 11) = "11W.08.2022" Then
+consor(h, 11) = "10.08.2022"
+End If
+
+session.findById("wnd[0]/usr/ssubSUB01:SAPLCORU_S:0010/subSLOT_DET5:SAPLCORU_S:0600/ctxtAFRUD-BUDAT").Text = consor(h, 11)
+
+session.findById("wnd[0]/tbar[1]/btn[18]").press
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]").sendVKey 0
+Call MatBatchOperator(PconsProf(5, j))
+session.findById("wnd[0]/tbar[0]/btn[11]").press
+
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+
+If consor(h, 9) = 0 Then
+Call mb31(consor(h, 1), currvol)
+End If
+
+Call closeOrder(consor(h, 1))
+
+End If
+Application.StatusBar = CStr(j) + "/" + CStr(UBound(PconsProf, 2))
+Next j
+End If
+Next h
+
+j = reglog(tim1, "Consumos")
+
+End Sub
+
+Sub mb31(ByVal ordprod As Long, ByVal crrvol As Long)
+
+
+session.findById("wnd[0]/tbar[0]/okcd").Text = "mb31"
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]/usr/ctxtMKPF-BLDAT").Text = Format(Date, "dd.mm.yyyy")
+session.findById("wnd[0]/usr/ctxtMKPF-BUDAT").Text = Format(Date, "dd.mm.yyyy")
+session.findById("wnd[0]/usr/ctxtRM07M-BWARTWE").Text = "101"
+session.findById("wnd[0]/usr/ctxtRM07M-AUFNR").Text = ordprod
+Application.Wait (Now + TimeValue("0:00:04"))
+session.findById("wnd[0]").sendVKey 0
+Application.Wait (Now + TimeValue("0:00:05"))
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]/usr/sub:SAPMM07M:0321/txtMSEG-ERFMG[0,7]").Text = crrvol
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]/tbar[0]/btn[11]").press
+session.findById("wnd[0]/usr/ctxtDM07M-HSDAT_INPUT").Text = Format(Date, "dd.mm.yyyy")
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+End Sub
+Sub closeOrder(ByVal ordprod As Long)
+
+Call SAPConnectionMS
+
+session.findById("wnd[0]/tbar[0]/okcd").Text = "cor2"
+session.findById("wnd[0]").sendVKey 0
+
+Application.Wait (Now + TimeValue("0:00:09"))
+
+session.findById("wnd[0]/usr/ctxtCAUFVD-AUFNR").Text = ordprod
+session.findById("wnd[0]").sendVKey 0
+session.findById("wnd[0]/mbar/menu[0]/menu[9]/menu[12]/menu[3]").Select
+session.findById("wnd[0]/tbar[0]/btn[11]").press
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+
+
+End Sub
+
+Sub closeBatch()
+
+Call SAPConnectionMS
+ordarr = cosheet.ListObjects("cooispi").DataBodyRange
+
+For i = 1 To UBound(ordarr, 1)
+If InStr(ordarr(i, 12), "LIB") <> 0 And ordarr(i, 9) > 0 Then
+Call closeOrder(ordarr(i, 5))
+End If
+Next i
+
+
+End Sub
+
+Sub hj()
+Call SAPConnectionMS
+
+
+
+For i = 10 To 17
+ord = Cells(i, 1).Value
+vol = Cells(i, 7).Value
+
+
+Call mb31(Cells(i, 2).Value, Cells(i, 8).Value)
+
+
+Next i
+
+End Sub

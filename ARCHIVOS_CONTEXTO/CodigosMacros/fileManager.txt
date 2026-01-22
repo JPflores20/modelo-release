@@ -1,0 +1,41 @@
+Public maltas, volumenMosto, volumenCoc As Variant
+Public linkf As String
+Sub MostoExtraction()
+
+Dim Detailed() As Variant
+Dim exportfile As Workbook
+
+link = Application.GetOpenFilename()
+Set exportfile = Workbooks.Open(link, ReadOnly:=True)
+Dim exportsheet As Worksheet
+exportfile.Activate
+
+exportfile.Worksheets("Malta").Activate
+
+maltas = ActiveSheet.ListObjects("Reclamo").Range
+
+exportfile.Worksheets("Proceso").Activate
+
+
+volumenMosto = ActiveSheet.ListObjects("Proceso").ListColumns(63).Range
+volumenCoc = ActiveSheet.ListObjects("Proceso").ListColumns(5).Range
+
+
+
+exportfile.Close savechanges:=False
+
+
+settings.Activate
+
+currtab = settings.ListObjects("CocVol").Range.Column
+
+Application.Calculation = xlCalculationManual
+
+Range(Cells(2, currtab), Cells(UBound(volumenMosto, 1), currtab)).Value = volumenCoc
+Range(Cells(2, currtab + 1), Cells(UBound(volumenMosto, 1), currtab + 1)).Value = volumenMosto
+
+
+Application.Calculation = xlCalculationAutomatic
+
+End Sub
+

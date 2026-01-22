@@ -1,0 +1,19 @@
+Sub browseFilePath()
+    On Error GoTo err
+    Dim fileExplorer As FileDialog
+    Set fileExplorer = Application.FileDialog(msoFileDialogFilePicker)
+    
+    'To allow or disable to multi select
+    fileExplorer.AllowMultiSelect = False
+    
+    With fileExplorer
+        If .Show = -1 Then 'Any file is selected
+            [filePath] = .SelectedItems.Item(1)
+        Else ' else dialog is cancelled
+            MsgBox "You have cancelled the dialogue"
+            [filePath] = "" ' when cancelled set blank as file path.
+        End If
+    End With
+err:
+    Exit Sub
+End Sub

@@ -1,0 +1,83 @@
+Sub BOMUpdate()
+
+tim1 = Now
+
+Dim bomlist As Variant
+ReDim bomlist(8, 0)
+
+Call SAPConnectionMS
+MatList = settings.ListObjects("Marcas").Range
+
+session.findById("wnd[0]").maximize
+session.findById("wnd[0]/tbar[0]/okcd").Text = "CS03"
+session.findById("wnd[0]").sendVKey 0
+
+
+For t = 2 To UBound(MatList, 1)
+session.findById("wnd[0]/usr/ctxtRC29N-MATNR").Text = MatList(t, 1)
+session.findById("wnd[0]/usr/ctxtRC29N-WERKS").Text = "PC13"
+session.findById("wnd[0]/usr/ctxtRC29N-STLAN").Text = "1"
+session.findById("wnd[0]/usr/txtRC29N-STLAL").Text = "1"
+session.findById("wnd[0]").sendVKey 0
+h = Maxrow("wnd[0]/usr/tabsTS_ITOV/tabpTCMA/ssubSUBPAGE:SAPLCSDI:0152/tblSAPLCSDITCMAT/txtRC29P-KTEXT[3,")
+tmpval = "ini"
+k = 0
+
+Do While tmpval <> "____"
+
+For u = 0 To h
+If session.findById("wnd[0]/usr/tabsTS_ITOV/tabpTCMA/ssubSUBPAGE:SAPLCSDI:0152/tblSAPLCSDITCMAT/txtRC29P-POSNR[0," + CStr(u) + "]").Text <> "____" Then
+
+ReDim Preserve bomlist(UBound(bomlist, 1), UBound(bomlist, 2) + 1)
+bomlist(1, UBound(bomlist, 2)) = MatList(t, 1)
+bomlist(2, UBound(bomlist, 2)) = session.findById("wnd[0]/usr/tabsTS_ITOV/tabpTCMA/ssubSUBPAGE:SAPLCSDI:0152/tblSAPLCSDITCMAT/txtRC29P-POSNR[0," + CStr(u) + "]").Text
+bomlist(3, UBound(bomlist, 2)) = session.findById("wnd[0]/usr/tabsTS_ITOV/tabpTCMA/ssubSUBPAGE:SAPLCSDI:0152/tblSAPLCSDITCMAT/ctxtRC29P-POSTP[1," + CStr(u) + "]").Text
+bomlist(4, UBound(bomlist, 2)) = session.findById("wnd[0]/usr/tabsTS_ITOV/tabpTCMA/ssubSUBPAGE:SAPLCSDI:0152/tblSAPLCSDITCMAT/ctxtRC29P-IDNRK[2," + CStr(u) + "]").Text
+bomlist(5, UBound(bomlist, 2)) = session.findById("wnd[0]/usr/tabsTS_ITOV/tabpTCMA/ssubSUBPAGE:SAPLCSDI:0152/tblSAPLCSDITCMAT/txtRC29P-KTEXT[3," + CStr(u) + "]").Text
+bomlist(6, UBound(bomlist, 2)) = session.findById("wnd[0]/usr/tabsTS_ITOV/tabpTCMA/ssubSUBPAGE:SAPLCSDI:0152/tblSAPLCSDITCMAT/txtRC29P-MENGE[4," + CStr(u) + "]").Text
+bomlist(7, UBound(bomlist, 2)) = session.findById("wnd[0]/usr/tabsTS_ITOV/tabpTCMA/ssubSUBPAGE:SAPLCSDI:0152/tblSAPLCSDITCMAT/ctxtRC29P-MEINS[5," + CStr(u) + "]").Text
+bomlist(8, UBound(bomlist, 2)) = session.findById("wnd[0]/usr/tabsTS_ITOV/tabpTCMA/ssubSUBPAGE:SAPLCSDI:0152/tblSAPLCSDITCMAT/txtRC29P-SORTF[13," + CStr(u) + "]").Text
+End If
+Next u
+tmpval = session.findById("wnd[0]/usr/tabsTS_ITOV/tabpTCMA/ssubSUBPAGE:SAPLCSDI:0152/tblSAPLCSDITCMAT/txtRC29P-POSNR[0," + CStr(h) + "]").Text
+
+If tmpval <> "____" Then
+k = k + 1
+session.findById("wnd[0]/usr/tabsTS_ITOV/tabpTCMA/ssubSUBPAGE:SAPLCSDI:0152/tblSAPLCSDITCMAT").verticalScrollbar.Position = k * h + 1
+End If
+Loop
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+Next t
+
+bomlist = Application.WorksheetFunction.Transpose(bomlist)
+
+recetas.Activate
+
+Set rectab = recetas.ListObjects("Recetas")
+srow = rectab.Range.Rows.Count + 1
+
+Application.Calculation = xlCalculationManual
+
+tmstp = Now
+
+For g = 2 To UBound(bomlist, 1)
+For j = 2 To UBound(bomlist, 2)
+Cells(srow + g - 2, j - 1).Value = bomlist(g, j)
+Next j
+Cells(srow + g - 2, 10).Value = tmstp
+Next g
+
+i = cellcounter(1)
+l = rectab.Range.columns.Count
+rectab.Resize Range(Cells(1, 1), Cells(i, l))
+
+Application.Calculation = xlCalculationAutomatic
+
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+
+F = reglog(tim1, "BOM Update")
+
+End Sub
+
+
+

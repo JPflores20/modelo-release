@@ -1,307 +1,177 @@
-import { useState, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Header from "@/components/Header";
-import ConfigurationCard from "@/components/ConfigurationCard";
-import OrdersGrid from "@/components/OrdersGrid";
-import ActivityLog from "@/components/ActivityLog";
-import DashboardMetrics from "@/components/DashboardMetrics"; // Importamos las métricas
-import { Button } from "@/components/ui/button";
-import { Loader2, Send, AlertTriangle } from "lucide-react";
-import { Order, ReleaseMode, LogEntry } from "@/types/orders";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
-// Datos de ejemplo
-const SAMPLE_ORDERS: Order[] = [
-  {
-    id: "ORD-001",
-    producto: "CORO-001",
-    descripcion: "Corona Extra 355ml",
-    lote: "L2024-001",
-    prehop: "PH-01",
-    descOrder: "DO-1234",
-    casa: "PLT-01",
-    linea: "L-01",
-    bateria: "B-001",
-    estatus: "pendiente",
-  },
-  {
-    id: "ORD-002",
-    producto: "CORO-002",
-    descripcion: "Corona Light 355ml",
-    lote: "L2024-001",
-    prehop: "PH-01",
-    descOrder: "DO-1235",
-    casa: "PLT-01",
-    linea: "L-02",
-    bateria: "B-002",
-    estatus: "pendiente",
-  },
-  {
-    id: "ORD-003",
-    producto: "MOD-001",
-    descripcion: "Modelo Especial 355ml",
-    lote: "L2024-002",
-    prehop: "PH-02",
-    descOrder: "DO-1236",
-    casa: "PLT-02",
-    linea: "L-01",
-    bateria: "B-003",
-    estatus: "liberado",
-  },
-  {
-    id: "ORD-004",
-    producto: "PAC-001",
-    descripcion: "Pacifico Clara 355ml",
-    lote: "L2024-003",
-    prehop: "PH-03",
-    descOrder: "DO-1237",
-    casa: "PLT-01",
-    linea: "L-03",
-    bateria: "B-004",
-    estatus: "pendiente",
-  },
-  {
-    id: "ORD-005",
-    producto: "NEG-001",
-    descripcion: "Negra Modelo 355ml",
-    lote: "L2024-003",
-    prehop: "PH-03",
-    descOrder: "DO-1238",
-    casa: "PLT-02",
-    linea: "L-02",
-    bateria: "B-005",
-    estatus: "pendiente",
-  },
-];
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { OrderManagement } from "@/components/tabs/OrderManagement";
+import { Button } from "@/components/ui/button"; // Aseguramos importar Button
+import { 
+  ClipboardList, 
+  Factory, 
+  FileText, 
+  History, 
+  BookOpen,
+  ExternalLink // Nuevo icono importado
+} from "lucide-react";
 
 const Dashboard = () => {
-  const [releaseMode, setReleaseMode] = useState<ReleaseMode>("identicos");
-  const [orders, setOrders] = useState<Order[]>(SAMPLE_ORDERS);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [isReleasing, setIsReleasing] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false); // Estado para el modal
-  const [logs, setLogs] = useState<LogEntry[]>([
-    {
-      id: "init-1",
-      timestamp: new Date(),
-      message: "Sistema iniciado correctamente.",
-      type: "info",
-    },
-    {
-      id: "init-2",
-      timestamp: new Date(),
-      message: "Conexión RFC establecida con SAP.",
-      type: "success",
-    },
-  ]);
-  const [isConnected] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
 
-  const addLog = useCallback(
-    (message: string, type: LogEntry["type"] = "info") => {
-      const newLog: LogEntry = {
-        id: `log-${Date.now()}-${Math.random()}`,
-        timestamp: new Date(),
-        message,
-        type,
-      };
-      setLogs((prev) => [...prev, newLog]);
-    },
-    []
-  );
-
-  const delay = (ms: number) =>
-    new Promise((resolve) => setTimeout(resolve, ms));
-
-  // Paso 1: Intentar liberar (abre el modal)
-  const handleReleaseClick = () => {
-    const ordersToRelease =
-      selectedIds.size > 0
-        ? orders.filter((o) => selectedIds.has(o.id) && o.estatus === "pendiente")
-        : orders.filter((o) => o.estatus === "pendiente");
-
-    if (ordersToRelease.length === 0) {
-      addLog("No hay órdenes pendientes seleccionadas para liberar.", "warning");
-      return;
-    }
-
-    setShowConfirmDialog(true);
-  };
-
-  // Paso 2: Ejecutar liberación real después de confirmar
-  const executeRelease = async () => {
-    setShowConfirmDialog(false);
-    
-    const ordersToRelease =
-      selectedIds.size > 0
-        ? orders.filter((o) => selectedIds.has(o.id) && o.estatus === "pendiente")
-        : orders.filter((o) => o.estatus === "pendiente");
-
-    setIsReleasing(true);
-    addLog(`Iniciando proceso de liberación...`, "info");
-    addLog(
-      `Configuración seleccionada: ${
-        releaseMode === "identicos" ? "Lotes Idénticos" : "Lotes Consecutivos"
-      }`,
-      "info"
-    );
-    addLog(`Órdenes a procesar: ${ordersToRelease.length}`, "info");
-
-    await delay(500);
-    addLog("Conectando con RFC...", "info");
-    await delay(800);
-    addLog("Conexión RFC establecida.", "success");
-
-    for (const order of ordersToRelease) {
-      setOrders((prev) =>
-        prev.map((o) =>
-          o.id === order.id ? { ...o, estatus: "procesando" } : o
-        )
-      );
-      addLog(`Procesando orden ${order.producto} - Lote: ${order.lote}...`, "info");
-      await delay(600 + Math.random() * 400);
-
-      const isSuccess = Math.random() > 0.1;
-
-      if (isSuccess) {
-        setOrders((prev) =>
-          prev.map((o) =>
-            o.id === order.id ? { ...o, estatus: "liberado" } : o
-          )
-        );
-        addLog(
-          `Orden ${order.producto} liberada con éxito en SAP.`,
-          "success"
-        );
-      } else {
-        setOrders((prev) =>
-          prev.map((o) =>
-            o.id === order.id ? { ...o, estatus: "error" } : o
-          )
-        );
-        addLog(
-          `Error al liberar orden ${order.producto}: Timeout en RFC.`,
-          "error"
-        );
+  useEffect(() => {
+    const checkSapStatus = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/status');
+        const data = await response.json();
+        setIsConnected(data.status === 'connected');
+      } catch (error) {
+        setIsConnected(false);
       }
-    }
+    };
 
-    await delay(300);
-    addLog("Proceso de liberación completado.", "success");
-    setSelectedIds(new Set());
-    setIsReleasing(false);
-  };
+    checkSapStatus();
+    const intervalId = setInterval(checkSapStatus, 5000);
+    return () => clearInterval(intervalId);
+  }, []);
 
-  const pendingCount = orders.filter((o) => o.estatus === "pendiente").length;
-  const selectedPendingCount = Array.from(selectedIds).filter((id) => {
-    const order = orders.find((o) => o.id === id);
-    return order?.estatus === "pendiente";
-  }).length;
-
-  const releaseCount =
-    selectedIds.size > 0 ? selectedPendingCount : pendingCount;
+  // URL proporcionada para el SOP
+  const SOP_URL = "https://login.microsoftonline.com/cef04b19-7776-4a94-b89b-375c77a8f936/saml2?SAMLRequest=jZJJb8IwEIX%2FSuR7VgJuLIJE4VCkLqjQHnqpxmYClhybepwu%2F74Bul6qnv3me%2FPeeEzQmr2YdmFnb%2FGpQwrRa2ssieNDzTpvhQPSJCy0SCIosZpeXYoiycTeu%2BCUMyyaEqEP2tmZs9S16Ffon7XCu9vLmu1C2JNIU5CxthKfE1Cw0ZDQG4ExOlGuTVc7LaUzGHYJkUsPFkW6vFmtWTTvd9IWDvRvlnFbbZNWK%2B%2FINcFZoy0eSQqbrJR5FXPOR3EJVRnLs0rGAz5UnMNZUw1G6SFcwaLFvGaPldxg1U%2FluMmbIQc%2BymDQcMg4L2XZVL2MqMOFpQA21KzIilGc5XFRrLNMlJUYDh5YtPzo4lzbjbbbv4uTJxGJi%2FV6GZ9i3qOnY8RewCbjw4biaOx%2FHORvLHxegU3%2B0zl9dT5Of9idvPfiuucv5ktntHqLpsa4l5lHCFiznKWT08jvnzN5Bw%3D%3D&RelayState=ss%3Amem%3Abfc81d1110b32c906fbf87a8f028ebf0e4b9bea809484dbea4abf45ad502faef&sso_reload=true";
 
   return (
     <div className="min-h-screen bg-muted/30 flex flex-col">
       <Header isConnected={isConnected} />
 
-      <main className="flex-1 container mx-auto px-4 py-6 flex flex-col gap-6 animate-in slide-in-from-bottom-6 fade-in duration-700">
+      <main className="flex-1 container mx-auto px-4 py-6 flex flex-col gap-6">
         
-        {/* NUEVO: Panel de Métricas */}
-        <DashboardMetrics orders={orders} />
+        {/* SISTEMA DE PESTAÑAS */}
+        <Tabs defaultValue="orders" className="w-full space-y-6">
+          
+          {/* Navegación de Pestañas */}
+          <div className="overflow-x-auto pb-2">
+            <TabsList className="bg-white/50 backdrop-blur border border-blue-100 p-1 h-auto min-h-12 shadow-sm inline-flex w-full justify-start md:justify-center flex-wrap gap-1">
+              
+              <TabsTrigger 
+                value="orders" 
+                className="data-[state=active]:bg-[#002855] data-[state=active]:text-white px-4 py-2 h-10 gap-2 transition-all flex-1 min-w-[140px]"
+              >
+                <ClipboardList className="h-4 w-4" />
+                <span className="whitespace-nowrap">Órdenes</span>
+              </TabsTrigger>
 
-        {/* Configuración */}
-        <ConfigurationCard
-          releaseMode={releaseMode}
-          onReleaseModeChange={setReleaseMode}
-        />
+              <TabsTrigger 
+                value="consumos" 
+                className="data-[state=active]:bg-[#002855] data-[state=active]:text-white px-4 py-2 h-10 gap-2 transition-all flex-1 min-w-[140px]"
+              >
+                <Factory className="h-4 w-4" />
+                <span className="whitespace-nowrap">Consumos</span>
+              </TabsTrigger>
 
-        {/* Tabla de Datos */}
-        <OrdersGrid
-          orders={orders}
-          selectedIds={selectedIds}
-          onOrdersChange={setOrders}
-          onSelectionChange={setSelectedIds}
-        />
+              <TabsTrigger 
+                value="recetas" 
+                className="data-[state=active]:bg-[#002855] data-[state=active]:text-white px-4 py-2 h-10 gap-2 transition-all flex-1 min-w-[140px]"
+              >
+                <FileText className="h-4 w-4" />
+                <span className="whitespace-nowrap">Gestión Recetas</span>
+              </TabsTrigger>
 
-        {/* Log de Actividad */}
-        <ActivityLog logs={logs} />
+              <TabsTrigger 
+                value="sop" 
+                className="data-[state=active]:bg-[#002855] data-[state=active]:text-white px-4 py-2 h-10 gap-2 transition-all flex-1 min-w-[100px]"
+              >
+                <BookOpen className="h-4 w-4" />
+                <span className="whitespace-nowrap">SOP</span>
+              </TabsTrigger>
 
-        {/* Footer de Acciones Flotante */}
-        <div className="flex items-center justify-between py-4 px-6 border border-[#FFB81C]/20 bg-white rounded-xl shadow-lg shadow-[#002855]/5 sticky bottom-4 z-10 backdrop-blur-md bg-white/90">
-          <div className="text-sm text-[#002855]">
-            {selectedIds.size > 0 ? (
-              <span>
-                <strong>{selectedIds.size}</strong> órdenes seleccionadas (
-                <strong className="text-[#FFB81C]">{selectedPendingCount}</strong> pendientes)
-              </span>
-            ) : (
-              <span>
-                <strong>{pendingCount}</strong> órdenes pendientes de{" "}
-                <strong>{orders.length}</strong> totales
-              </span>
-            )}
+              <TabsTrigger 
+                value="cambios" 
+                className="data-[state=active]:bg-[#002855] data-[state=active]:text-white px-4 py-2 h-10 gap-2 transition-all flex-1 min-w-[140px]"
+              >
+                <History className="h-4 w-4" />
+                <span className="whitespace-nowrap">Control Cambios</span>
+              </TabsTrigger>
+
+            </TabsList>
           </div>
-          <Button
-            size="lg"
-            onClick={handleReleaseClick} // Ahora llama a la función que abre el modal
-            disabled={isReleasing || releaseCount === 0}
-            className="bg-[#FFB81C] hover:bg-[#e5a50a] text-[#002855] font-bold px-8 gap-2 shadow-md transition-all hover:scale-105"
-          >
-            {isReleasing ? (
-              <>
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Procesando en SAP...
-              </>
-            ) : (
-              <>
-                <Send className="h-5 w-5" />
-                LIBERAR ÓRDENES ({releaseCount})
-              </>
-            )}
-          </Button>
-        </div>
+
+          {/* 1. Órdenes */}
+          <TabsContent value="orders" className="outline-none space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+             <OrderManagement isConnected={isConnected} />
+          </TabsContent>
+
+          {/* 2. Consumos */}
+          <TabsContent value="consumos" className="outline-none space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50">
+              <div className="p-4 bg-white rounded-full shadow-sm mb-4">
+                <Factory className="h-12 w-12 text-gray-300" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-500">Generación de Consumos</h3>
+              <p className="text-sm text-gray-400 mt-2 text-center max-w-md">
+                Módulo para el cálculo automático de mermas y notificaciones de producción (COR6N).
+              </p>
+            </div>
+          </TabsContent>
+
+          {/* 3. Gestión de Recetas */}
+          <TabsContent value="recetas" className="outline-none space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50">
+              <div className="p-4 bg-white rounded-full shadow-sm mb-4">
+                <FileText className="h-12 w-12 text-gray-300" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-500">Gestión de Recetas Maestras</h3>
+              <p className="text-sm text-gray-400 mt-2 text-center max-w-md">
+                Visualización, edición y aprobación de versiones de producción y BOMs.
+              </p>
+            </div>
+          </TabsContent>
+
+          {/* 4. SOP (ACTUALIZADO CON BOTÓN) */}
+          <TabsContent value="sop" className="outline-none space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed border-[#002855]/20 rounded-xl bg-white/60 p-8 shadow-sm">
+              
+              <div className="p-5 bg-blue-50 rounded-full shadow-inner mb-6 ring-1 ring-blue-100">
+                <BookOpen className="h-14 w-14 text-[#002855]" />
+              </div>
+              
+              <h3 className="text-2xl font-bold text-[#002855] mb-2">Procedimientos Operativos (SOP)</h3>
+              
+              <p className="text-muted-foreground text-center max-w-lg mb-8 leading-relaxed">
+                Acceda al repositorio oficial de Grupo Modelo para consultar manuales técnicos, 
+                guías de usuario y protocolos de seguridad actualizados.
+              </p>
+
+              <Button 
+                size="lg"
+                className="bg-[#002855] hover:bg-[#001f40] text-white font-bold gap-3 px-8 py-6 text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-[#FFB81C]"
+                onClick={() => window.open(SOP_URL, '_blank')}
+              >
+                <ExternalLink className="h-5 w-5 text-[#FFB81C]" />
+                Acceder al Portal SOP
+              </Button>
+
+              <p className="text-xs text-muted-foreground mt-6 flex items-center gap-1 opacity-70">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                Enlace seguro autenticado por Microsoft Azure
+              </p>
+            </div>
+          </TabsContent>
+
+          {/* 5. Control Cambios */}
+          <TabsContent value="cambios" className="outline-none space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed border-gray-300 rounded-xl bg-gray-50/50">
+              <div className="p-4 bg-white rounded-full shadow-sm mb-4">
+                <History className="h-12 w-12 text-gray-300" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-500">Log de Control de Cambios</h3>
+              <p className="text-sm text-gray-400 mt-2 text-center max-w-md">
+                Auditoría detallada de modificaciones en parámetros críticos.
+              </p>
+            </div>
+          </TabsContent>
+
+        </Tabs>
+
       </main>
 
-      {/* Footer */}
       <footer className="bg-[#002855] text-white/60 py-3 text-center text-xs border-t border-[#FFB81C]/30">
-        © 2024 Grupo Modelo México. Sistema de Liberación de Órdenes v1.0
+        © 2024 Grupo Modelo México. Sistema ZEUS v1.0
       </footer>
-
-      {/* Modal de Confirmación de Seguridad */}
-      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent className="border-l-4 border-l-[#FFB81C]">
-          <AlertDialogHeader>
-            <div className="flex items-center gap-2 text-[#FFB81C] mb-2">
-              <AlertTriangle className="h-5 w-5" />
-              <span className="font-bold uppercase tracking-wider text-xs">Confirmación de Seguridad</span>
-            </div>
-            <AlertDialogTitle className="text-[#002855]">
-              ¿Está seguro de liberar {releaseCount} órdenes?
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción enviará las órdenes seleccionadas a SAP para su procesamiento inmediato. 
-              Verifique que los lotes sean correctos antes de continuar.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="border-transparent hover:bg-gray-100">Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={executeRelease}
-              className="bg-[#002855] hover:bg-[#002855]/90 text-white font-bold"
-            >
-              Confirmar Liberación
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

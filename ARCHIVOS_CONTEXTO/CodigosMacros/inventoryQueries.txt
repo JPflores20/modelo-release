@@ -1,0 +1,187 @@
+Sub InventoryQuery()
+
+Application.Calculation = xlCalculationManual
+
+tim1 = Now
+
+Call Mb52Update
+Call Mb51Update
+Call Mb51ConsUpdate
+
+Application.Calculation = xlCalculationAutomatic
+
+F = reglog(tim1, "Inventory Update")
+
+End Sub
+Sub Mb51Update()
+tim1 = Now
+
+Dim RawMb51, RawMb52, MatList, TransDate, MovList As ListObject
+Set RawMb51 = mb51tab.ListObjects("RawMb51")
+Set RawMb52 = mb52tab.ListObjects("RawMb52")
+Set MatList = recetas.ListObjects("materiales")
+Set MovList = settings.ListObjects("movmb51")
+Set TransDate = settings.ListObjects("TransDate")
+
+datearr = TransDate.Range
+lotarr = RawMb52.ListColumns(13).DataBodyRange
+matarr = MatList.ListColumns(1).DataBodyRange
+movarr = MovList.ListColumns(1).DataBodyRange
+
+Call SAPConnectionMS
+session.findById("wnd[0]/tbar[0]/okcd").Text = "mb51"
+session.findById("wnd[0]").sendVKey 0
+
+session.findById("wnd[0]/mbar/menu[2]/menu[0]/menu[0]").Select
+session.findById("wnd[1]/usr/txtV-LOW").Text = "/Start-MB51"
+session.findById("wnd[1]/usr/txtENAME-LOW").Text = ""
+session.findById("wnd[1]/tbar[0]/btn[8]").press
+
+session.findById("wnd[0]/usr/ctxtMATNR-LOW").Text = "1"
+session.findById("wnd[0]/usr/ctxtCHARG-LOW").Text = ""
+session.findById("wnd[0]/usr/ctxtAUFNR-LOW").Text = ""
+
+
+
+Call SAPmultval(matarr, "wnd[0]/usr/btn%_MATNR_%_APP_%-VALU_PUSH")
+Call SAPmultval(lotarr, "wnd[0]/usr/btn%_CHARG_%_APP_%-VALU_PUSH")
+Call SAPmultval(movarr, "wnd[0]/usr/btn%_BWART_%_APP_%-VALU_PUSH")
+
+session.findById("wnd[0]/usr/ctxtWERKS-LOW").Text = "PC13"
+
+session.findById("wnd[0]/usr/ctxtBUDAT-LOW").Text = Format(datearr(2, 2), "dd.mm.yyyy")
+session.findById("wnd[0]/usr/ctxtBUDAT-HIGH").Text = Format(datearr(2, 3), "dd.mm.yyyy")
+
+session.findById("wnd[0]/usr/ctxtLGORT-LOW").Text = ""
+
+
+session.findById("wnd[0]/usr/ctxtALV_DEF").Text = "/PABLOJ"
+session.findById("wnd[0]/tbar[1]/btn[8]").press
+session.findById("wnd[0]/tbar[1]/btn[48]").press
+
+session.findById("wnd[0]/mbar/menu[3]/menu[2]/menu[1]").Select
+session.findById("wnd[1]/usr/ssubD0500_SUBSCREEN:SAPLSLVC_DIALOG:0501/cmbG51_USPEC_LBOX").SetFocus
+session.findById("wnd[1]/usr/ssubD0500_SUBSCREEN:SAPLSLVC_DIALOG:0501/cntlG51_CONTAINER/shellcont/shell").currentCellRow = -1
+session.findById("wnd[1]/usr/ssubD0500_SUBSCREEN:SAPLSLVC_DIALOG:0501/cntlG51_CONTAINER/shellcont/shell").selectColumn "VARIANT"
+session.findById("wnd[1]/usr/ssubD0500_SUBSCREEN:SAPLSLVC_DIALOG:0501/cntlG51_CONTAINER/shellcont/shell").contextMenu
+session.findById("wnd[1]/usr/ssubD0500_SUBSCREEN:SAPLSLVC_DIALOG:0501/cntlG51_CONTAINER/shellcont/shell").selectContextMenuItem "&FILTER"
+session.findById("wnd[2]/usr/ssub%_SUBSCREEN_FREESEL:SAPLSSEL:1105/ctxt%%DYN001-LOW").Text = "/MB51-TRACE"
+session.findById("wnd[2]/usr/ssub%_SUBSCREEN_FREESEL:SAPLSSEL:1105/ctxt%%DYN001-LOW").caretPosition = 11
+session.findById("wnd[2]/tbar[0]/btn[0]").press
+session.findById("wnd[1]/usr/ssubD0500_SUBSCREEN:SAPLSLVC_DIALOG:0501/cntlG51_CONTAINER/shellcont/shell").selectedRows = "0"
+session.findById("wnd[1]/usr/ssubD0500_SUBSCREEN:SAPLSLVC_DIALOG:0501/cntlG51_CONTAINER/shellcont/shell").clickCurrentCell
+
+
+session.findById("wnd[0]/mbar/menu[0]/menu[1]/menu[2]").Select
+session.findById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[4,0]").Select
+session.findById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[4,0]").SetFocus
+session.findById("wnd[1]/tbar[0]/btn[0]").press
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+
+RawMb51.DataBodyRange.SpecialCells(xlCellTypeConstants).ClearContents
+RawMb51.Resize Range(Cells(1, 1), Cells(2, RawMb51.Range.columns.Count))
+mb51tab.Activate
+u = cellcounter(19)
+Range(Cells(3, 19), Cells(u, 20)).ClearContents
+
+temp.Activate
+
+Cells(1, 1).Select
+ActiveSheet.Paste
+columns("A:A").Select
+
+    Selection.TextToColumns Destination:=Range("A1"), DataType:=xlDelimited, _
+        TextQualifier:=xlDoubleQuote, ConsecutiveDelimiter:=False, Tab:=True, _
+        Semicolon:=False, Comma:=False, Space:=False, Other:=True, OtherChar _
+        :="|", FieldInfo:=Array(Array(1, 1), Array(2, 1), Array(3, 1), Array(4, 2), Array(5, _
+        1), Array(6, 1), Array(7, 1), Array(8, 1), Array(9, 1), Array(10, 1), Array(11, 1), Array(12 _
+        , 1), Array(13, 1), Array(14, 1), Array(15, 1), Array(16, 1), Array(17, 1), Array(18, 1), _
+        Array(19, 1), Array(20, 1), Array(21, 1)), TrailingMinusNumbers:=True
+
+
+u = cellcounter(2)
+i = cellcounter(4, True)
+Mb51Arr = Range(Cells(6, 2), Cells(u, i)).Value
+
+Cells.ClearContents
+
+mb51tab.Activate
+Range(Cells(2, 1), Cells(UBound(Mb51Arr, 1) + 1, UBound(Mb51Arr, 2))).Value = Mb51Arr
+mb51tab.Activate
+o = cellcounter(1)
+RawMb51.Resize Range(Cells(1, 1), Cells(o, RawMb51.Range.columns.Count))
+
+F = reglog(tim1, "mb51")
+mb51tab.Activate
+
+End Sub
+
+Sub Mb52Update()
+tim1 = Now
+Dim RawMb52, MatList As ListObject
+Set RawMb52 = mb52tab.ListObjects("RawMb52")
+Set MatList = recetas.ListObjects("materiales")
+
+matarr = MatList.ListColumns(1).DataBodyRange
+Call SAPConnectionMS
+
+session.findById("wnd[0]/tbar[0]/okcd").Text = "mb52"
+session.findById("wnd[0]").sendVKey 0
+
+Call SAPmultval(matarr, "wnd[0]/usr/btn%_MATNR_%_APP_%-VALU_PUSH")
+
+session.findById("wnd[0]/usr/chkXMCHB").Selected = True
+session.findById("wnd[0]/usr/chkNOZERO").Selected = True
+session.findById("wnd[0]/usr/ctxtWERKS-LOW").Text = "PC13"
+session.findById("wnd[0]/usr/ctxtCHARG-LOW").Text = ""
+session.findById("wnd[0]/usr/ctxtP_VARI").Text = "/mb52-cocto"
+session.findById("wnd[0]/tbar[1]/btn[8]").press
+session.findById("wnd[0]/mbar/menu[0]/menu[1]/menu[2]").Select
+session.findById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[4,0]").Select
+session.findById("wnd[1]/usr/subSUBSCREEN_STEPLOOP:SAPLSPO5:0150/sub:SAPLSPO5:0150/radSPOPLI-SELFLAG[4,0]").SetFocus
+session.findById("wnd[1]/tbar[0]/btn[0]").press
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+session.findById("wnd[0]/tbar[0]/btn[3]").press
+
+RawMb52.DataBodyRange.SpecialCells(xlCellTypeConstants).ClearContents
+RawMb52.Resize Range(Cells(1, 1), Cells(2, RawMb52.Range.columns.Count))
+mb52tab.Activate
+u = cellcounter(11)
+Range(Cells(3, 11), Cells(u, 13)).ClearContents
+
+temp.Activate
+
+Cells(1, 1).Select
+ActiveSheet.Paste
+columns("A:A").Select
+
+
+    Selection.TextToColumns Destination:=Range("A1"), DataType:=xlDelimited, _
+        TextQualifier:=xlDoubleQuote, ConsecutiveDelimiter:=False, Tab:=True, _
+        Semicolon:=False, Comma:=False, Space:=False, Other:=True, OtherChar _
+        :="|", FieldInfo:=Array(Array(1, 1), Array(2, 1), Array(3, 1), Array(4, 1), Array(5, _
+        1), Array(6, 1), Array(7, 1), Array(8, 1), Array(9, 1), Array(10, 2), Array(11, 1), Array(12 _
+        , 1)), TrailingMinusNumbers:=True
+
+        
+
+u = cellcounter(2)
+i = cellcounter(4, True)
+Mb52Arr = Range(Cells(4, 2), Cells(u, i)).Value
+
+Cells.ClearContents
+
+mb52tab.Activate
+Range(Cells(2, 1), Cells(UBound(Mb52Arr, 1) + 1, UBound(Mb52Arr, 2))).Value = Mb52Arr
+mb52tab.Activate
+o = cellcounter(1)
+RawMb52.Resize Range(Cells(1, 1), Cells(o, RawMb52.Range.columns.Count))
+
+F = reglog(tim1, "mb52")
+mb52tab.Activate
+
+
+
+End Sub
